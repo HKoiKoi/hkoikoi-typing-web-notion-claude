@@ -87,7 +87,7 @@
 
 ## 현재 상태 (2026-10-05 기준)
 
-- 완료: Phase 0(Task 001, commit `5b0868c`)과 Phase 1의 Task 002~006 전부, Phase 2의 Task 007, 008. 다음 Task: 009(타이핑 화면 UI)와 010(순수 함수 구현)은 서로 병렬로 시작할 수 있다
+- 완료: Phase 0(Task 001, commit `5b0868c`)과 Phase 1의 Task 002~006 전부, Phase 2의 Task 007~009, Phase 3의 Task 010. 다음 Task: 011(노션 데이터 연동)과 013(입력 엔진 훅)은 서로 병렬로 시작할 수 있다
 - 이미 존재하여 다시 만들지 않는 것
   - 설정/의존성: `next.config.ts`의 `cacheComponents: true`, `@notionhq/client` `5.27.0`과 `server-only` `0.0.1`(둘 다 정확 고정), `.env.example`의 노션 키 3종(`NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`, `NOTION_LINES_DATA_SOURCE_ID`), `siteConfig.nav`는 "예문 목록" 한 항목
   - 루트 `layout.tsx`(ThemeProvider → TooltipProvider → SiteHeader/main/SiteFooter, Toaster), `error.tsx`, `loading.tsx`, `not-found.tsx`
@@ -102,7 +102,8 @@
 - Task 007 산출물: 판정 토큰 `--typing-*` 7종(`globals.css`), 더미 데이터 `src/lib/mock/passages.ts`(Task 011에서 제거), 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거)
 - Task 008 산출물: `src/lib/passages/filter.ts` 구현(`parseFilter`, `filterPassages`, `sortPassages`, `getNextPassageId`, `buildFilterQuery`), `src/app/_components/`의 `passage-card.tsx`·`passage-filters.tsx`·`passage-browser.tsx`·`passage-list-skeleton.tsx`, 홈(`/`)과 `loading.tsx` 통합(더미 데이터는 Task 011에서 노션 데이터로 교체), 개발 전용 `/dev/passage-list`(Task 018에서 제거)
 - Task 009 산출물: `src/app/passages/[id]/_components/`의 `line-chars.tsx`·`typing-board.tsx`·`typing-stats.tsx`·`result-view.tsx`·`typing-screen.tsx`·`passage-screen.tsx`·`dummy-states.ts`(Task 014에서 `useTypingSession`으로 대체), `PassageErrorState`에 `description` prop 추가, `/passages/[id]` 정적 화면(더미), 개발 전용 `/dev/typing-ui`(Task 018에서 제거)
-- Task 010 이후는 모두 미착수
+- Task 010 산출물: `src/lib/typing/{normalize,judge,metrics,truncate}.ts` 구현(`normalizeLine`, `toCodePoints`, `judgeLine`, `isLineComplete`, `accumulateStats`, `computeMetrics`, `truncateToLine`, 스텁의 `eslint-disable` 제거), 개발 전용 `/dev/typing-lab`(`cases.ts` 45케이스, `_components/lab-results.tsx`, `page.tsx`, Task 018에서 제거). `typed` 0 정확도 기본값 100으로 확정
+- Task 011 이후는 모두 미착수
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -287,7 +288,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 테스트 체크리스트
     - [x] 정적: `npx tsc --noEmit`, `npm run lint` 통과, `grep`으로 순수 모듈의 금지 import 0건
     - [x] 타입과 시그니처만 있고 런타임 로직이 없으므로 Playwright MCP 테스트는 해당 없음
-  - 테스트 결과: (2026-10-05) `tsc` 오류 0건, `lint` 경고·오류 0건. `grep`으로 `src/types`, `src/lib/typing`(`pending-enter.ts` 포함), `src/lib/passages/filter.ts`에서 `react`/`next`/`@notionhq`/`server-only` import와 `process.env` 0건, `load.ts` 첫 줄 `import "server-only"`. `git status`에서 `src/lib/notion/*`와 `pending-enter.ts` 무변경(신규 파일 8개, `.gitkeep` 3개 삭제). 결정: `PassageResult`는 PRD의 `ok` 판별 유니온 채택, `enabled`는 `Passage`에서 제외. 미결: `typed` 0일 때 정확도 기본값(100 또는 0)은 Task 010에서 확정, 오류 분류 위치는 Task 011 실측 후 확정
+  - 테스트 결과: (2026-10-05) `tsc` 오류 0건, `lint` 경고·오류 0건. `grep`으로 `src/types`, `src/lib/typing`(`pending-enter.ts` 포함), `src/lib/passages/filter.ts`에서 `react`/`next`/`@notionhq`/`server-only` import와 `process.env` 0건, `load.ts` 첫 줄 `import "server-only"`. `git status`에서 `src/lib/notion/*`와 `pending-enter.ts` 무변경(신규 파일 8개, `.gitkeep` 3개 삭제). 결정: `PassageResult`는 PRD의 `ok` 판별 유니온 채택, `enabled`는 `Passage`에서 제외. 결정: `typed` 0일 때 정확도 기본값은 100(Task 010에서 확정). 미결: 오류 분류 위치는 Task 011 실측 후 확정
 
 ### Phase 2: UI/UX 완성 (더미 데이터 활용)
 
@@ -370,7 +371,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
 **Phase 완료 조건**: Task 015 통합 테스트에서 S2, S4, S5, S7 통과, S1·S6 1차 확인.
 **테스트 원칙**: Phase 3의 모든 Task는 구현 직후 Playwright MCP로 테스트하고, 통과하기 전에는 다음 Task로 넘어가지 않는다.
 
-- **Task 010: 판정·정규화·지표 계산 순수 함수 구현 및 검증**
+- **Task 010: 판정·정규화·지표 계산 순수 함수 구현 및 검증** ✅
   - 관련: F004, F005, F006, F012, F015, PRD 7.1/7.2/7.5/7.6/7.8
   - 의존: 006 (Phase 2와 병렬 가능)
   - 구현 사항
@@ -380,23 +381,23 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - `src/lib/typing/truncate.ts`: `truncateToLine(input, target)` — 호출 측에서 조합 중이 아닐 때만 사용
     - 개발 전용 검증 페이지 `src/app/dev/typing-lab/page.tsx`: 아래 케이스 표(입력, 기대값)를 렌더하고 각 케이스의 통과/실패와 전체 요약(`통과 n / 전체 m`)을 표시한다. 프로덕션에서는 `notFound()`. 케이스 데이터는 함수 호출 결과와 기대값을 나란히 보여줘 Playwright로 읽기 쉽게 한다
   - 수용 기준
-    - [ ] 정규화: 탭·연속 공백·양끝 공백 처리, 줄 앞 `(1절)`·`(Note: …)` 같은 괄호는 본문 글자로 유지
-    - [ ] 판정: 겹받침(닭, 읽)·이중모음(왜, 의) 조합 중 상태가 `incorrect`로 나오지 않는다, 영어 대소문자·스마트 따옴표는 그대로 비교
-    - [ ] 집계: "가나" → 백스페이스 → "가다" 입력 시 입력 수 3, 오타 수는 정의대로 계산된다, 같은 확정 문자열 재전달 시 수치 불변
-    - [ ] 지표: 고정 입력(글자 수, 경과 ms)에 대한 CPM/WPM/정확도가 7.6 식과 일치
-    - [ ] 함수들이 React/DOM/Next를 import하지 않는다
-    - [ ] `/dev/typing-lab`의 전체 케이스가 통과한다
+    - [x] 정규화: 탭·연속 공백·양끝 공백 처리, 줄 앞 `(1절)`·`(Note: …)` 같은 괄호는 본문 글자로 유지
+    - [x] 판정: 겹받침(닭, 읽)·이중모음(왜, 의) 조합 중 상태가 `incorrect`로 나오지 않는다, 영어 대소문자·스마트 따옴표는 그대로 비교
+    - [x] 집계: "가나" → 백스페이스 → "가다" 입력 시 입력 수 3, 오타 수는 정의대로 계산된다, 같은 확정 문자열 재전달 시 수치 불변
+    - [x] 지표: 고정 입력(글자 수, 경과 ms)에 대한 CPM/WPM/정확도가 7.6 식과 일치
+    - [x] 함수들이 React/DOM/Next를 import하지 않는다
+    - [x] `/dev/typing-lab`의 전체 케이스가 통과한다
   - 테스트 체크리스트 (Playwright MCP, `/dev/typing-lab`)
-    - [ ] 정상 (정규화): `\t가  나 ` → `가 나`, `(1절) 동해물과` → 변경 없이 본문 유지
-    - [ ] 정상 (판정): target `닭`, input `닭` → `correct`. target `읽`, 조합 중 input `일`(마지막 글자) → `composing`(`incorrect` 아님). target `왜`, 조합 중 `ㅇ`/`와` 단계 → `composing`
-    - [ ] 정상 (지표): totalChars 300, elapsedMs 60000 → CPM 300, WPM 60. typed 100, mistakes 5 → 정확도 95%
-    - [ ] 오류 (판정): target `abc`, input `abd` → 3번째 `incorrect`. target `a b`, input `a  `(틀린 공백 위치) → `incorrectSpace`. 대소문자 `A` vs `a` → `incorrect`. 스마트 따옴표 `’` vs `'` → `incorrect`
-    - [ ] 오류 (집계): "가나" 확정 → 백스페이스("가") → "가다" 확정 시 입력 수 3, 오타 수 target 대비 계산. 같은 확정 문자열("가다") 재전달 → 수치 불변
-    - [ ] 엣지: 빈 입력, 입력이 target보다 긴 경우(초과분 `extra`, `truncateToLine` 결과 길이 = target 길이), elapsedMs 0 → CPM/WPM이 `NaN/Infinity`가 아니라 0, typed 0 → 정확도 100 또는 정의한 기본값, 이모지/결합 문자 코드 포인트, NFD로 입력된 한글이 NFC와 동일 판정
-    - [ ] 엣지: 한 번에 여러 글자가 확정되는 경우(붙여넣기 없이 `compositionend`에서 2글자 이상 갱신) 입력 수가 정확
-    - [ ] 확인: `browser_evaluate`로 요약 `통과 n / 전체 m`을 읽어 n = m, `browser_console_messages` 오류 0건
-    - [ ] 정적: `grep`으로 `src/lib/typing/`에 `react`, `next`, DOM 전역 import/사용 0건
-  - 테스트 결과: (미수행)
+    - [x] 정상 (정규화): `\t가  나 ` → `가 나`, `(1절) 동해물과` → 변경 없이 본문 유지
+    - [x] 정상 (판정): target `닭`, input `닭` → `correct`. target `읽`, 조합 중 input `일`(마지막 글자) → `composing`(`incorrect` 아님). target `왜`, 조합 중 `ㅇ`/`와` 단계 → `composing`
+    - [x] 정상 (지표): totalChars 300, elapsedMs 60000 → CPM 300, WPM 60. typed 100, mistakes 5 → 정확도 95%
+    - [x] 오류 (판정): target `abc`, input `abd` → 3번째 `incorrect`. target `a b`, input `a  `(틀린 공백 위치) → `incorrectSpace`. 대소문자 `A` vs `a` → `incorrect`. 스마트 따옴표 `’` vs `'` → `incorrect`
+    - [x] 오류 (집계): "가나" 확정 → 백스페이스("가") → "가다" 확정 시 입력 수 3, 오타 수 target 대비 계산. 같은 확정 문자열("가다") 재전달 → 수치 불변
+    - [x] 엣지: 빈 입력, 입력이 target보다 긴 경우(초과분 `extra`, `truncateToLine` 결과 길이 = target 길이), elapsedMs 0 → CPM/WPM이 `NaN/Infinity`가 아니라 0, typed 0 → 정확도 100 또는 정의한 기본값, 이모지/결합 문자 코드 포인트, NFD로 입력된 한글이 NFC와 동일 판정
+    - [x] 엣지: 한 번에 여러 글자가 확정되는 경우(붙여넣기 없이 `compositionend`에서 2글자 이상 갱신) 입력 수가 정확
+    - [x] 확인: `browser_evaluate`로 요약 `통과 n / 전체 m`을 읽어 n = m, `browser_console_messages` 오류 0건
+    - [x] 정적: `grep`으로 `src/lib/typing/`에 `react`, `next`, DOM 전역 import/사용 0건
+  - 테스트 결과: (2026-10-05) `tsc`/`lint` 0건. `grep`으로 `src/lib/typing/{normalize,judge,metrics,truncate}.ts`에서 `react`/`next`/`document`/`window` 사용 0건, `eslint-disable` 제거 확인. `/dev/typing-lab`(개발 서버 `localhost:3000`, Playwright MCP)에서 `browser_evaluate`로 요약 `통과 45 / 전체 45`, 실패 행 0건, 콘솔 오류 0건, 라이트/다크 중 다크 스크린샷 확인. 결정: `typed` 0일 때 정확도 기본값은 **100**(오타가 아직 없음), `elapsedMs` 0 이하/비유한이면 CPM·WPM 0, 정확도는 0~100으로 제한하고 반올림은 표시 계층 책임. `incorrectSpace`는 불일치이면서 target 또는 input 글자가 공백일 때, 초과 입력은 조합 중에도 `extra`가 `composing`보다 우선, 조합 중에는 `matches`가 항상 `false`. `isLineComplete(target, input)`를 `judge.ts`에서 export. `truncateToLine` 결과는 NFC 정규화된다. 미확인: 프로덕션 빌드에서 `/dev/typing-lab`의 `notFound()` 동작은 확인하지 않았다(Task 018에서 `/dev/*`와 함께 재확인), 실제 IME 입력과의 연동은 Task 013·015에서 확인
 
 - **Task 011: 노션 목록 조회·캐싱·오류 분류 구현 및 목록 페이지 연동**
   - 관련: F001, F002, F008, F009, S1, S4, S6
