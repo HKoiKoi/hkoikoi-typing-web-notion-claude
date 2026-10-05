@@ -87,19 +87,20 @@
 
 ## 현재 상태 (2026-10-05 기준)
 
-- 완료: Phase 0(Task 001, commit `5b0868c`)과 Phase 1의 Task 002~006 전부. 다음 Task: 007(Phase 2 UI)과 010(순수 함수 구현)은 서로 병렬로 시작할 수 있다
+- 완료: Phase 0(Task 001, commit `5b0868c`)과 Phase 1의 Task 002~006 전부, Phase 2의 Task 007. 다음 Task: 008(목록 UI)과 010(순수 함수 구현)은 서로 병렬로 시작할 수 있다
 - 이미 존재하여 다시 만들지 않는 것
   - 설정/의존성: `next.config.ts`의 `cacheComponents: true`, `@notionhq/client` `5.27.0`과 `server-only` `0.0.1`(둘 다 정확 고정), `.env.example`의 노션 키 3종(`NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`, `NOTION_LINES_DATA_SOURCE_ID`), `siteConfig.nav`는 "예문 목록" 한 항목
   - 루트 `layout.tsx`(ThemeProvider → TooltipProvider → SiteHeader/main/SiteFooter, Toaster), `error.tsx`, `loading.tsx`, `not-found.tsx`
-  - L2: `Container`, `EmptyState`(icon/title/description/action), `Logo`, `PageHeader`, `ThemeProvider`, `ThemeToggle`
+  - L2: `Container`, `EmptyState`(icon/title/description/action), `Logo`, `PageHeader`, `ThemeProvider`, `ThemeToggle`, `PassageErrorState`(Task 007), `StatItem`(Task 007)
   - L3: `SiteHeader`, `SiteFooter`, `MainNav`, `MobileNav`
-  - L1(shadcn): alert, avatar, badge, breadcrumb, button, card, checkbox, dialog, dropdown-menu, field, input, label, navigation-menu, select, separator, sheet, skeleton, sonner, tabs, textarea, tooltip
+  - L1(shadcn): alert, avatar, badge, breadcrumb, button, card, checkbox, dialog, dropdown-menu, field, input, label, navigation-menu, progress, scroll-area, select, separator, sheet, skeleton, sonner, tabs, textarea, toggle, toggle-group, tooltip
   - 라우트 골격: 홈(`/`)은 `PageHeader` + `Suspense`로 감싼 `src/app/_components/passage-filter.tsx`(`useSearchParams` 자리표시자) + `EmptyState` 자리표시자. `/passages/[id]`는 `page.tsx`(params를 `Suspense` 안에서 해석), `_components/passage-placeholder.tsx`, `loading.tsx`, `not-found.tsx`
   - 타입과 계약(Task 006, 시그니처만 있고 본문은 `throw` 스텁): `src/types/passage.ts`, `src/types/typing.ts`, `src/lib/typing/{normalize,judge,metrics,truncate}.ts`(구현 Task 010), `src/lib/passages/filter.ts`(구현 Task 008), `src/lib/passages/load.ts`(구현 Task 011, 012). 스텁 파일마다 있는 `eslint-disable` 한 줄은 구현 Task에서 제거
   - 스파이크 산출물(Task 004, 005): `src/lib/typing/pending-enter.ts`(Task 013에서 재사용), `src/lib/notion/client.ts`·`passages.ts`·`lines.ts`(Task 011의 출발점, Lines 본문 프로퍼티명 `Text`와 D11 대응책 반영 필요), `src/lib/notion/dev-probe.ts`와 개발 전용 라우트 `/dev/ime-log`, `/dev/notion-cache`(+`probe/route.ts`)는 Task 018에서 제거 또는 비노출 확인
-- 아직 없는 것: 노션 행 → `PassageSummary`/`Line` 매핑(`mappers.ts`), 판정·필터·정렬·래퍼 실제 구현, `src/hooks/` 내용(`.gitkeep`뿐), `src/lib/mock/passages.ts`, `/dev/typing-lab`, 판정 색상 토큰(`--typing-*`), shadcn `progress`/`toggle-group`/`scroll-area`, 예문 목록·타이핑·결과·오류 UI
+- 아직 없는 것: 노션 행 → `PassageSummary`/`Line` 매핑(`mappers.ts`), 판정·필터·정렬·래퍼 실제 구현, `src/hooks/` 내용(`.gitkeep`뿐), `/dev/typing-lab`, 예문 목록·타이핑·결과·오류 UI
 - 미확인으로 남은 것: Task 004 수동(선택) `suppressEnter` 수정 후 macOS 한글 IME 실입력 재확인, Task 003의 다크 모드·스크린샷 시각 확인
-- Phase 2 이후는 모두 미착수
+- Task 007 산출물: 판정 토큰 `--typing-*` 7종(`globals.css`), 더미 데이터 `src/lib/mock/passages.ts`(Task 011에서 제거), 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거)
+- Task 008 이후는 모두 미착수
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -291,7 +292,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
 **목표**: 노션 연동 없이 더미 데이터로 목록 → 타이핑 → 결과 → 오류 화면 전체 흐름을 눈으로 확인할 수 있게 만든다.
 **Phase 완료 조건**: 더미 데이터로 모든 화면 상태(목록/필터 0건/빈 DB/타이핑 각 글자 상태/결과/오류 4종)를 렌더하고, 라이트/다크 양쪽에서 판정 색상 대비 4.5:1 이상.
 
-- **Task 007: 판정 색상 토큰, 공통 컴포넌트 및 더미 데이터 준비**
+- **Task 007: 판정 색상 토큰, 공통 컴포넌트 및 더미 데이터 준비** ✅
   - 관련: F004, F009, F010, PRD 8장
   - 의존: 006
   - 구현 사항
@@ -301,8 +302,8 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - 더미 데이터 `src/lib/mock/passages.ts`: 창세기 1장 31줄, 애국가(`Label` `1절`/`후렴`), 영어 글, 각 분류/난이도/태그 조합 10건 이상
   - 수용 기준
     - [x] 판정 토큰 7종의 라이트/다크 대비 측정값이 이 Task의 `테스트 결과`에 기록되고 모두 4.5:1 이상
-    - [ ] 새 L1 컴포넌트가 모두 shadcn CLI로 추가되었다
-    - [ ] L2 컴포넌트가 L3/L4를 import하지 않는다
+    - [x] 새 L1 컴포넌트가 모두 shadcn CLI로 추가되었다
+    - [x] L2 컴포넌트가 L3/L4를 import하지 않는다
   - 테스트 체크리스트 (Playwright MCP)
     - [x] 정상: 임시 미리보기 화면에서 토큰 7종 렌더 → `browser_emulate_media`로 라이트/다크 전환 후 `browser_take_screenshot`
     - [x] 정상: `browser_evaluate`로 `getComputedStyle` 값을 읽어 대비비 계산 → 7종 모두 4.5:1 이상
