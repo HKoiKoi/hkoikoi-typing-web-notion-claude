@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { Container } from "@/components/common/container";
 import { PageHeader } from "@/components/common/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getCallCount, getLastGood, isBadToken, setLastGood } from "@/lib/notion/dev-probe";
 import { NotionConfigError } from "@/lib/notion/client";
 import { getPassageRowsCached } from "@/lib/notion/passages";
@@ -157,7 +158,13 @@ export default function NotionCachePage() {
         description="예문 목록 캐시, 실호출 횟수, 오류 분류를 확인합니다."
       />
       <Suspense
-        fallback={<p data-testid="loading">불러오는 중...</p>}
+        fallback={
+          <div className="space-y-3" data-testid="loading">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        }
       >
         <ProbeResult />
       </Suspense>
