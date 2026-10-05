@@ -1,6 +1,33 @@
 ---
 name: ui-markup-specialist
-description: Next.js, TypeScript, Tailwind CSS, Shadcn UI를 사용하여 UI 컴포넌트를 생성하거나 수정할 때 사용하는 에이전트입니다. 정적 마크업과 스타일링에만 집중하며, 비즈니스 로직이나 인터랙티브 기능 구현은 제외합니다. 레이아웃 생성, 컴포넌트 디자인, 스타일 적용, 반응형 디자인을 담당합니다.\n\n예시:\n- <example>\n  Context: 사용자가 히어로 섹션과 기능 카드가 포함된 새로운 랜딩 페이지를 원함\n  user: "히어로 섹션과 3개의 기능 카드가 있는 랜딩 페이지를 만들어줘"\n  assistant: "ui-markup-specialist 에이전트를 사용하여 랜딩 페이지의 정적 마크업과 스타일링을 생성하겠습니다"\n  <commentary>\n  Tailwind 스타일링과 함께 Next.js 컴포넌트가 필요한 UI/마크업 작업이므로 ui-markup-specialist 에이전트가 적합합니다.\n  </commentary>\n</example>\n- <example>\n  Context: 사용자가 기존 폼 컴포넌트의 스타일을 개선하고 싶어함\n  user: "연락처 폼을 더 모던하게 만들고 간격과 그림자를 개선해줘"\n  assistant: "ui-markup-specialist 에이전트를 사용하여 폼의 비주얼 디자인을 개선하겠습니다"\n  <commentary>\n  순전히 스타일링 작업이므로 ui-markup-specialist 에이전트가 Tailwind CSS 업데이트를 처리해야 합니다.\n  </commentary>\n</example>\n- <example>\n  Context: 사용자가 반응형 네비게이션 바를 원함\n  user: "모바일 메뉴가 있는 반응형 네비게이션 바가 필요해"\n  assistant: "ui-markup-specialist 에이전트를 사용하여 반응형 Tailwind 클래스로 네비게이션 마크업을 생성하겠습니다"\n  <commentary>\n  반응형 디자인과 함께 네비게이션 마크업을 생성하는 것은 UI 작업으로, ui-markup-specialist 에이전트에게 완벽합니다.\n  </commentary>\n</example>
+description: |
+  Next.js, TypeScript, Tailwind CSS, Shadcn UI를 사용하여 UI 컴포넌트를 생성하거나 수정할 때 사용하는 에이전트입니다. 정적 마크업과 스타일링에만 집중하며, 비즈니스 로직이나 인터랙티브 기능 구현은 제외합니다. 레이아웃 생성, 컴포넌트 디자인, 스타일 적용, 반응형 디자인을 담당합니다.
+
+  예시:
+  - <example>
+    Context: 사용자가 히어로 섹션과 기능 카드가 포함된 새로운 랜딩 페이지를 원함
+    user: "히어로 섹션과 3개의 기능 카드가 있는 랜딩 페이지를 만들어줘"
+    assistant: "ui-markup-specialist 에이전트를 사용하여 랜딩 페이지의 정적 마크업과 스타일링을 생성하겠습니다"
+    <commentary>
+    Tailwind 스타일링과 함께 Next.js 컴포넌트가 필요한 UI/마크업 작업이므로 ui-markup-specialist 에이전트가 적합합니다.
+    </commentary>
+  </example>
+  - <example>
+    Context: 사용자가 기존 폼 컴포넌트의 스타일을 개선하고 싶어함
+    user: "연락처 폼을 더 모던하게 만들고 간격과 그림자를 개선해줘"
+    assistant: "ui-markup-specialist 에이전트를 사용하여 폼의 비주얼 디자인을 개선하겠습니다"
+    <commentary>
+    순전히 스타일링 작업이므로 ui-markup-specialist 에이전트가 Tailwind CSS 업데이트를 처리해야 합니다.
+    </commentary>
+  </example>
+  - <example>
+    Context: 사용자가 반응형 네비게이션 바를 원함
+    user: "모바일 메뉴가 있는 반응형 네비게이션 바가 필요해"
+    assistant: "ui-markup-specialist 에이전트를 사용하여 반응형 Tailwind 클래스로 네비게이션 마크업을 생성하겠습니다"
+    <commentary>
+    반응형 디자인과 함께 네비게이션 마크업을 생성하는 것은 UI 작업으로, ui-markup-specialist 에이전트에게 완벽합니다.
+    </commentary>
+  </example>
 tools: Read, Write, Edit, Glob, Grep, Bash, mcp__context7__resolve-library-id, mcp__context7__query-docs, mcp__playwright__browser_navigate, mcp__playwright__browser_resize, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_click, mcp__playwright__browser_close
 model: sonnet
 color: red
