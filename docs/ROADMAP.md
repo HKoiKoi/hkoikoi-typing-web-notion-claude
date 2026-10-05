@@ -87,15 +87,19 @@
 
 ## 현재 상태 (2026-10-05 기준)
 
-- 완료: 스타터킷 데모 제거 및 프로젝트 전환 (commit `5b0868c`)
+- 완료: Phase 0(Task 001, commit `5b0868c`)과 Phase 1의 Task 002~006 전부. 다음 Task: 007(Phase 2 UI)과 010(순수 함수 구현)은 서로 병렬로 시작할 수 있다
 - 이미 존재하여 다시 만들지 않는 것
+  - 설정/의존성: `next.config.ts`의 `cacheComponents: true`, `@notionhq/client` `5.27.0`과 `server-only` `0.0.1`(둘 다 정확 고정), `.env.example`의 노션 키 3종(`NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`, `NOTION_LINES_DATA_SOURCE_ID`), `siteConfig.nav`는 "예문 목록" 한 항목
   - 루트 `layout.tsx`(ThemeProvider → TooltipProvider → SiteHeader/main/SiteFooter, Toaster), `error.tsx`, `loading.tsx`, `not-found.tsx`
   - L2: `Container`, `EmptyState`(icon/title/description/action), `Logo`, `PageHeader`, `ThemeProvider`, `ThemeToggle`
   - L3: `SiteHeader`, `SiteFooter`, `MainNav`, `MobileNav`
   - L1(shadcn): alert, avatar, badge, breadcrumb, button, card, checkbox, dialog, dropdown-menu, field, input, label, navigation-menu, select, separator, sheet, skeleton, sonner, tabs, textarea, tooltip
-  - 홈(`/`)은 예문 목록 자리표시자(PageHeader + EmptyState)
-- 아직 없는 것: `@notionhq/client`, `cacheComponents` 설정, `src/hooks/`, `src/types/`, `/passages/[id]` 라우트, 노션 환경 변수(`.env`에는 노션 관련 키 없음), shadcn `progress`/`toggle-group`/`scroll-area`
-- 이후 Phase는 모두 미착수
+  - 라우트 골격: 홈(`/`)은 `PageHeader` + `Suspense`로 감싼 `src/app/_components/passage-filter.tsx`(`useSearchParams` 자리표시자) + `EmptyState` 자리표시자. `/passages/[id]`는 `page.tsx`(params를 `Suspense` 안에서 해석), `_components/passage-placeholder.tsx`, `loading.tsx`, `not-found.tsx`
+  - 타입과 계약(Task 006, 시그니처만 있고 본문은 `throw` 스텁): `src/types/passage.ts`, `src/types/typing.ts`, `src/lib/typing/{normalize,judge,metrics,truncate}.ts`(구현 Task 010), `src/lib/passages/filter.ts`(구현 Task 008), `src/lib/passages/load.ts`(구현 Task 011, 012). 스텁 파일마다 있는 `eslint-disable` 한 줄은 구현 Task에서 제거
+  - 스파이크 산출물(Task 004, 005): `src/lib/typing/pending-enter.ts`(Task 013에서 재사용), `src/lib/notion/client.ts`·`passages.ts`·`lines.ts`(Task 011의 출발점, Lines 본문 프로퍼티명 `Text`와 D11 대응책 반영 필요), `src/lib/notion/dev-probe.ts`와 개발 전용 라우트 `/dev/ime-log`, `/dev/notion-cache`(+`probe/route.ts`)는 Task 018에서 제거 또는 비노출 확인
+- 아직 없는 것: 노션 행 → `PassageSummary`/`Line` 매핑(`mappers.ts`), 판정·필터·정렬·래퍼 실제 구현, `src/hooks/` 내용(`.gitkeep`뿐), `src/lib/mock/passages.ts`, `/dev/typing-lab`, 판정 색상 토큰(`--typing-*`), shadcn `progress`/`toggle-group`/`scroll-area`, 예문 목록·타이핑·결과·오류 UI
+- 미확인으로 남은 것: Task 004 수동(선택) `suppressEnter` 수정 후 macOS 한글 IME 실입력 재확인, Task 003의 다크 모드·스크린샷 시각 확인
+- Phase 2 이후는 모두 미착수
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -119,7 +123,7 @@
 ```
 001 ✅ ─> 002(결정) ✅ ─> 003(골격/라우트/cacheComponents) ✅ ─┬─> 004(IME 스파이크) ✅ ─────────┐
                                                          ├─> 005(노션/캐시 스파이크) ✅ ┐    │
-                                                         └─> 006(타입/모듈 경계) ─┬─────┼────┤
+                                                         └─> 006(타입/모듈 경계) ✅ ┬─────┼────┤
                                                                                   │     │    │
 Phase 2 (UI, 더미)      006 ─> 007(토큰/공통/더미) ─┬─> 008(목록 UI)               │     │    │
                                                     └─> 009(타이핑/결과/오류 UI)   │     │    │
@@ -156,7 +160,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - ✅ 홈 화면을 예문 목록 자리표시자(PageHeader + EmptyState)로 교체
   - ✅ siteConfig, package 이름, README, CLAUDE.md를 프로젝트 내용으로 갱신
 
-### Phase 1: 애플리케이션 골격 구축 및 위험 조기 검증
+### Phase 1: 애플리케이션 골격 구축 및 위험 조기 검증 ✅
 
 **목표**: 착수 전 결정 사항을 확정하고, 전체 라우트·타입·모듈 경계를 만든 뒤, 가장 위험한 두 영역(IME, 노션 캐시)을 스파이크로 먼저 검증한다.
 **Phase 완료 조건**: 결정 기록 D1~D12 확정, `/`와 `/passages/[id]` 골격이 `cacheComponents: true` 상태에서 `npm run build` 통과, 스파이크 결과 문서화.
@@ -264,23 +268,23 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 테스트 결과: (2026-10-05) `tsc`/`lint` 통과. **기준선**: Passages 4행(`Empty Passage Sample`, `The Road Not Taken`, `창세기 1장`, `애국가`)을 `/dev/notion-cache`에서 조회(`/`는 아직 노션 미연동이라 검증 페이지로 대체). **Lines**: `Passage` relation `contains` 필터와 `Line Number` 오름차순이 동작(10·31·16줄, 빈 예문 0줄, `in_trash` 0건). 단 Lines DB의 본문 프로퍼티가 `Title`이어서 `filter_properties: Text`가 `validation_error`였고, 사용자가 노션에서 `Text`로 변경해 해소. **`filter_properties`**: 이름과 ID 모두 허용(ID로 요청하면 해당 프로퍼티만 응답). **`page_size`**: 1로 줄여도 4행 전부 수집(4회 요청), Lines 31줄은 `page_size=2`로 16회 요청해 전부 수집. **S1(프로덕션)**: 캐시 생성 45초 후 제목 수정 → 첫 새로고침에서 이미 갱신(호출 2→3), 이후 같은 값 유지. 기대한 "1회째 이전/2회째 갱신"과 달리 재조회를 기다린 뒤 응답했고, 1회 측정이라 stale-while-revalidate 여부는 단정하지 않는다. **D11**: 결정 기록 D11 참고(오류 발생·미캐시·즉시 복구·오류 분류 불가·마지막 성공값 폴백 동작). **오류 미캐시**: 틀린 토큰(셸 환경 변수로 덮어씀)으로 기동 시 요청마다 노션 재호출·오류, 정상 토큰으로 재기동한 첫 요청에서 성공. **빌드/S4**: `npm run build` 중 노션 호출 로그 0건, `.env`를 제거하고도 빌드 성공(검증 페이지가 `connection()`으로 동적이기 때문이며 실제 목록 페이지는 Task 011에서 재확인), `.next/`·HTML·RSC 응답·`outerHTML`에서 토큰 0건, 콘솔 오류 0건. 가드 보정: 환경 변수 가드가 빌드 시점에 평가되어 `notFound`가 프리렌더되는 문제를 `connection()` 이후로 옮겨 해결. 미확인: dev 모드 캐시 동작은 참고용이라 결론 근거에서 제외, `browser_network_requests` 대신 `curl`로 문서·RSC 본문 검사
   - 비고: 스파이크 코드(`src/lib/notion/dev-probe.ts`, `src/app/dev/notion-cache/` 전체와 `probe/route.ts`, `NOTION_SPIKE_PROBE`)는 Task 018에서 제거한다. `client.ts`·`passages.ts`·`lines.ts`는 Task 011의 출발점으로 재사용하되 Lines 본문 프로퍼티명(`Text`)과 D11 대응책을 반영한다
 
-- **Task 006: 타입 정의 및 모듈 경계 설계**
+- **Task 006: 타입 정의 및 모듈 경계 설계** ✅
   - 관련: F001~F015 공통, PRD 5장/7장
   - 의존: 003
   - 구현 사항
-    - `src/types/passage.ts`: `Language`, `Difficulty`, `PassageSummary`, `Passage`, `Line { text; label? }`, `PassageResult<T>`(`kind: 'config' | 'transient' | 'notFound' | 'empty'`), `PassageFilter { category?; lang?; difficulty?; tag? }`
-    - `src/types/typing.ts`: `CharState`(`correct | incorrect | incorrectSpace | pending | current | composing | extra`), `LineJudgement`, `TypingStats`, `TypingStatus`(`idle | typing | finished`), `TypingResult`
-    - 순수 함수 시그니처만 먼저 선언(구현은 Task 010): `normalizeLine`, `toCodePoints`, `judgeLine`, `accumulateStats`, `computeMetrics`, `truncateToLine`
+    - `src/types/passage.ts`: `Language`, `Difficulty`, `PassageSummary`, `Passage`, `Line { text; label? }`, `PassageErrorKind`(`'config' | 'transient' | 'notFound' | 'empty'`), `PassageResult<T>`(`{ ok: true; data: T } | { ok: false; kind: PassageErrorKind }`, PRD 5장과 동일), `PassageFilter { category?; lang?; difficulty?; tag? }`
+    - `src/types/typing.ts`: `CharState`(`correct | incorrect | incorrectSpace | pending | current | composing | extra`), `LineJudgement`, `TypingStats`, `TypingStatus`(`idle | typing | finished`), `TypingResult`, 보조 타입 `TypingMetrics`(`computeMetrics` 반환용)
+    - 순수 함수 시그니처만 먼저 선언(구현은 Task 010): `normalizeLine`·`toCodePoints`(`normalize.ts`), `judgeLine`(`judge.ts`), `accumulateStats(prev, prevConfirmed, nextConfirmed, target)`·`computeMetrics`(`metrics.ts`), `truncateToLine`(`truncate.ts`). 본문은 `throw` 스텁(`declare function`은 `isolatedModules`에서 값 export가 안 되어 쓰지 않음)이며 미사용 매개변수 lint 경고를 막으려 파일마다 `eslint-disable` 한 줄을 두었으므로 구현 Task에서 제거한다
     - 목록 필터/정렬 시그니처: `src/lib/passages/filter.ts`의 `parseFilter(searchParams)`, `filterPassages`, `sortPassages`, `getNextPassageId`
-    - 노션 모듈 경계: `src/lib/notion/`(서버 전용: client, 캐시 조회 함수, 매핑) ↔ `src/lib/passages/`(서버 래퍼 `loadPassageSummaries`/`loadPassage` → `PassageResult`) ↔ 페이지. 클라이언트 컴포넌트로는 `PassageSummary[]`/`Passage`만 전달
+    - 노션 모듈 경계: `src/lib/notion/`(서버 전용: client, 캐시 조회 함수, 매핑) ↔ `src/lib/passages/`(서버 래퍼 `loadPassageSummaries`/`loadPassage` → `PassageResult`) ↔ 페이지. 클라이언트 컴포넌트로는 `PassageSummary[]`/`Passage`만 전달. **미결**: 오류 분류를 캐시 안에서 할지 밖에서 할지는 Task 005 실측(프로덕션 `use cache` 경계를 지난 오류는 `digest`만 가진 `Error`)으로 Task 011 실측 후 확정한다. `load.ts` 주석에 대안과 위험을 적었고 반환 타입 `PassageResult`는 대안과 무관하게 유지된다
   - 수용 기준
-    - [ ] 모든 타입이 PRD 5장 개념 타입과 1:1로 대응한다
-    - [ ] `src/lib/typing/`, `src/lib/passages/filter.ts`가 React/Next/노션 SDK를 import하지 않는다
-    - [ ] `npx tsc --noEmit` 통과
+    - [x] 모든 타입이 PRD 5장 개념 타입과 1:1로 대응한다
+    - [x] `src/lib/typing/`, `src/lib/passages/filter.ts`가 React/Next/노션 SDK를 import하지 않는다
+    - [x] `npx tsc --noEmit` 통과
   - 테스트 체크리스트
-    - [ ] 정적: `npx tsc --noEmit`, `npm run lint` 통과, `grep`으로 순수 모듈의 금지 import 0건
-    - [ ] 타입과 시그니처만 있고 런타임 로직이 없으므로 Playwright MCP 테스트는 해당 없음
-  - 테스트 결과: (미수행)
+    - [x] 정적: `npx tsc --noEmit`, `npm run lint` 통과, `grep`으로 순수 모듈의 금지 import 0건
+    - [x] 타입과 시그니처만 있고 런타임 로직이 없으므로 Playwright MCP 테스트는 해당 없음
+  - 테스트 결과: (2026-10-05) `tsc` 오류 0건, `lint` 경고·오류 0건. `grep`으로 `src/types`, `src/lib/typing`(`pending-enter.ts` 포함), `src/lib/passages/filter.ts`에서 `react`/`next`/`@notionhq`/`server-only` import와 `process.env` 0건, `load.ts` 첫 줄 `import "server-only"`. `git status`에서 `src/lib/notion/*`와 `pending-enter.ts` 무변경(신규 파일 8개, `.gitkeep` 3개 삭제). 결정: `PassageResult`는 PRD의 `ok` 판별 유니온 채택, `enabled`는 `Passage`에서 제외. 미결: `typed` 0일 때 정확도 기본값(100 또는 0)은 Task 010에서 확정, 오류 분류 위치는 Task 011 실측 후 확정
 
 ### Phase 2: UI/UX 완성 (더미 데이터 활용)
 
@@ -363,8 +367,8 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 의존: 006 (Phase 2와 병렬 가능)
   - 구현 사항
     - `src/lib/typing/normalize.ts`: `normalizeLine`(NFC, 탭→공백, 연속 공백 1칸, trim). 라벨은 Lines DB의 `Label` 속성을 쓰므로 괄호 파싱은 없다
-    - `src/lib/typing/judge.ts`: `toCodePoints`(NFC 후 `Array.from`), `judgeLine(target, input, { composing })` → `CharState[]`(확정 구간 즉시 판정, 조합 중 마지막 글자는 `composing` 중립, 초과분 `extra`, 틀린 공백 `incorrectSpace`), `isLineComplete`
-    - `src/lib/typing/metrics.ts`: `accumulateStats(prevCommitted, nextCommitted, target, acc)` — 이전/새 확정 문자열 차이로 새로 추가·변경된 위치만 입력 수와 오타 수에 더함(같은 위치 같은 글자 중복 집계 금지, 백스페이스 후 재입력은 새 입력, 음절별 `compositionend` 가정 없음), `computeMetrics({ totalChars, typed, mistakes, elapsedMs })` → 정확도/CPM/WPM(0분 나눗셈 방지)
+    - `src/lib/typing/normalize.ts`의 `toCodePoints`(NFC 후 `Array.from`, Task 006에서 normalize.ts에 선언)를 쓰는 `src/lib/typing/judge.ts`: `judgeLine(target, input, { composing })` → `LineJudgement`(`{ states: CharState[]; matches: boolean }`, Task 006 시그니처)(확정 구간 즉시 판정, 조합 중 마지막 글자는 `composing` 중립, 초과분 `extra`, 틀린 공백 `incorrectSpace`), `isLineComplete`
+    - `src/lib/typing/metrics.ts`: `accumulateStats(prev, prevConfirmed, nextConfirmed, target)`(Task 006 시그니처, `prev`는 누적 `TypingStats`) — 이전/새 확정 문자열 차이로 새로 추가·변경된 위치만 입력 수와 오타 수에 더함(같은 위치 같은 글자 중복 집계 금지, 백스페이스 후 재입력은 새 입력, 음절별 `compositionend` 가정 없음), `computeMetrics({ totalChars, typed, mistakes, elapsedMs })` → 정확도/CPM/WPM(0분 나눗셈 방지)
     - `src/lib/typing/truncate.ts`: `truncateToLine(input, target)` — 호출 측에서 조합 중이 아닐 때만 사용
     - 개발 전용 검증 페이지 `src/app/dev/typing-lab/page.tsx`: 아래 케이스 표(입력, 기대값)를 렌더하고 각 케이스의 통과/실패와 전체 요약(`통과 n / 전체 m`)을 표시한다. 프로덕션에서는 `notFound()`. 케이스 데이터는 함수 호출 결과와 기대값을 나란히 보여줘 Playwright로 읽기 쉽게 한다
   - 수용 기준
