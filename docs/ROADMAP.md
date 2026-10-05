@@ -99,12 +99,13 @@
   - 스파이크 산출물(Task 004, 005): `src/lib/typing/pending-enter.ts`(Task 013에서 재사용), `src/lib/notion/client.ts`·`passages.ts`·`lines.ts`(Task 011의 출발점, Lines 본문 프로퍼티명 `Text`와 D11 대응책 반영 필요), `src/lib/notion/dev-probe.ts`와 개발 전용 라우트 `/dev/ime-log`, `/dev/notion-cache`(+`probe/route.ts`)는 Task 018에서 제거 또는 비노출 확인
 - 아직 없는 것: 노션 행 → `PassageSummary`/`Line` 매핑(`mappers.ts`), 판정·필터·정렬·래퍼 실제 구현, `src/hooks/` 내용(`.gitkeep`뿐), `/dev/typing-lab`, 예문 목록·타이핑·결과·오류 UI
 - 미확인으로 남은 것: Task 004 수동(선택) `suppressEnter` 수정 후 macOS 한글 IME 실입력 재확인, Task 003의 다크 모드·스크린샷 시각 확인
-- Task 007 산출물: 판정 토큰 `--typing-*` 7종(`globals.css`), 더미 데이터 `src/lib/mock/passages.ts`(목록 참조는 Task 011에서 제거, 파일 삭제는 `passage-screen.tsx`·`/dev/typing-ui`가 쓰므로 Task 012), 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거)
+- Task 007 산출물: 판정 토큰 `--typing-*` 7종(`globals.css`), 더미 데이터 `src/lib/mock/passages.ts`(목록 참조는 Task 011에서 제거, 파일 삭제는 `/dev/typing-ui`가 쓰므로 Task 018), 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거)
 - Task 008 산출물: `src/lib/passages/filter.ts` 구현(`parseFilter`, `filterPassages`, `sortPassages`, `getNextPassageId`, `buildFilterQuery`), `src/app/_components/`의 `passage-card.tsx`·`passage-filters.tsx`·`passage-browser.tsx`·`passage-list-skeleton.tsx`, 홈(`/`)과 `loading.tsx` 통합(더미 데이터는 Task 011에서 노션 데이터로 교체), 개발 전용 `/dev/passage-list`(Task 018에서 제거)
 - Task 009 산출물: `src/app/passages/[id]/_components/`의 `line-chars.tsx`·`typing-board.tsx`·`typing-stats.tsx`·`result-view.tsx`·`typing-screen.tsx`·`passage-screen.tsx`·`dummy-states.ts`(Task 014에서 `useTypingSession`으로 대체), `PassageErrorState`에 `description` prop 추가, `/passages/[id]` 정적 화면(더미), 개발 전용 `/dev/typing-ui`(Task 018에서 제거)
 - Task 010 산출물: `src/lib/typing/{normalize,judge,metrics,truncate}.ts` 구현(`normalizeLine`, `toCodePoints`, `judgeLine`, `isLineComplete`, `accumulateStats`, `computeMetrics`, `truncateToLine`, 스텁의 `eslint-disable` 제거), 개발 전용 `/dev/typing-lab`(`cases.ts` 45케이스, `_components/lab-results.tsx`, `page.tsx`, Task 018에서 제거). `typed` 0 정확도 기본값 100으로 확정
 - Task 011 산출물: `src/lib/notion/mappers.ts`(`toPassageSummary`, `mapPassageRows`), `passages.ts`의 `getPassageSummariesCached`(`stale 30`·`revalidate 300`·`expire 600`, 태그 `passages`), `src/lib/passages/load.ts`의 `loadPassageSummaries`(D11 확정, `loadPassage`는 Task 012 스텁 유지), 홈 연동 `src/app/_components/passage-list-section.tsx`(`connection()`으로 요청 시점 실행)·`passage-retry-button.tsx`(transient [다시 시도]). 스파이크 export(`getPassageRowsCached` 등)는 `/dev/notion-cache`가 쓰므로 유지(Task 018 제거)
-- 다음은 Task 012. Task 012 이후는 미착수
+- Task 012 산출물: `src/lib/notion/lines-mapper.ts`(`toLine`, `mapLineRows`), `passage-lines.ts`의 `getPassageLinesCached`, `load.ts`의 `loadPassage`(`classifyByProbe` 일반화), `/passages/[id]`의 `PassageScreen` 연동(`nextHref`/`listHref`), `PassageRetryButton`을 `src/components/common/`으로 이동. 더미 `src/lib/mock/passages.ts`는 `/dev/typing-ui`가 쓰므로 유지(삭제는 Task 018). 타이핑 보드는 아직 정적 표시(입력 엔진은 Task 013)
+- 다음은 Task 013. Task 013 이후는 미착수
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -428,32 +429,32 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - [x] 공통: 콘솔 오류 0건
   - 테스트 결과: (2026-10-05, `next build && next start`, 노션 실호출, 기준선 Passages 4행) `tsc`/`lint`/`build` 통과. 홈 카드 4개, `?lang=en&difficulty=Medium` → 1개·URL 쿼리 유지·콘솔 오류 0건. **config**: 틀린 토큰(`unauthorized`), 틀린 data source ID(`object_not_found`), 환경 변수 누락 모두 설정 오류 안내, 토글로 틀린 토큰 → 정상 복구 즉시 반영(오류 미캐시). **transient**: 프록시 거부로 노션 차단 시 일시 오류 안내와 [다시 시도] 버튼. 캐시 후 토큰을 틀리게 바꿔도 320초 뒤까지 이전 목록 유지(캐시 stale 또는 마지막 성공값, 둘은 구분하지 못함). **S4**: HTML·RSC 응답·`outerHTML`에서 토큰 0건. **빌드**: 홈이 `◐`(PPR)이라 `.env` 없이도 빌드되며 빌드 중 노션 호출 없음. 발견: 홈을 정적 프리렌더에 두면 오류 화면이 1일 박제되고 빌드 중 노션 오류가 빌드를 실패시켜 `connection()`으로 해결. **노션 데이터 조작 검증(사용자 조작)**: `Empty Passage Sample`의 `Category`를 비우면 '기타'로 표시되고 정렬은 기타 → 애국가 → 창세기 → English Text(분류 한글 순. 4행은 분류가 모두 달라 같은 분류 안의 순서→제목 비교는 미확인), `Enabled` 해제 행은 목록에서 제외(로그 없음), `Language jp`(`reason=invalid-language`)와 `Title` 공백(`reason=empty-title`) 행은 건너뛰고 나머지는 정상 표시하며 서버 로그에는 행 id와 사유 코드만 기록, 유효 행 0건이면 '표시할 예문이 없습니다'와 'DB에 예문 행을 추가하세요' 안내(다시 시도 버튼 없음). 4행 복구 후 카드 4개 확인. **100건 초과**: 실제 100건 초과 DB는 없어 `page_size: 1` 임시 실험으로 대체(4행 전부 수집, 임시 코드 원복과 `git diff` 확인). 관찰: 노션 복구 직후 서버를 재기동한 첫 로드가 빈 화면이었다가 이후 같은 서버에서 정상으로 바뀐 1회가 있었고 원인은 확인하지 못했다(노션 실제 조회 결과는 정상). config 안내에는 복구 버튼이 없다(기본 `action: null`, 설정 변경은 재배포·재기동이 필요해 의도적으로 두지 않음)
 
-- **Task 012: 노션 본문 줄(Lines DB) 조회·매핑 및 타이핑 화면 데이터 연동**
+- **Task 012: 노션 본문 줄(Lines DB) 조회·매핑 및 타이핑 화면 데이터 연동** ✅
   - 관련: F003, F008, F009, F015, S1, S6
   - 의존: 010(정규화 함수), 011(클라이언트·래퍼 패턴)
   - 구현 사항
-    - `src/lib/notion/passage-lines.ts`: `getPassageLinesCached(id)` — `'use cache'`, `cacheLife({ revalidate: 300 })`, `cacheTag(\`passage-${id}\`)`(목록 태그 `passages`를 함께 붙일지는 구현 시 결정해 기록), Lines data source를 `Passage` 관계 `contains` 필터 + `Line Number` 오름차순 정렬로 `collectPaginatedAPI` 전부 수집, `filter_properties`로 `Text`/`Line Number`/`Label`만 수신, 실패 시 throw
+    - `src/lib/notion/passage-lines.ts`: `getPassageLinesCached(id)` — `'use cache'`, `cacheLife({ stale: 30, revalidate: 300, expire: 600 })`(프리렌더 제외 하한 때문에 revalidate만 적을 수 없어 Task 011과 같은 값), `cacheTag(\`passage-${id}\`)`와 `passages`를 함께 부착(F008 새로고침 버튼이 `revalidateTag('passages')` 한 번으로 목록·모든 줄 캐시를 갱신), Lines data source를 `Passage` 관계 `contains` 필터 + `Line Number` 오름차순 정렬로 `collectPaginatedAPI` 전부 수집, `filter_properties`로 `Text`/`Line Number`/`Label`만 수신, 실패 시 throw
     - `src/lib/notion/lines-mapper.ts`(순수 함수): 행 → `Line` — `Text`(title) plain text → `normalizeLine`, `Label`(rich_text) plain text → `normalizeLine`(비면 `undefined`). 정규화 후 `Text`가 빈 행, `Line Number`가 빈 행, `in_trash` 행은 건너뛰고 로그. `Line Number` 기준 안정 정렬(중복은 경고 로그 후 응답 순서 유지)
     - 래퍼 `loadPassage(id)`: 캐시된 목록(`loadPassageSummaries`)에서 id를 찾지 못하면 `notFound`(잘못된 ID, `Enabled` 해제 예문 포함), 줄 0개 → `empty`, 나머지 오류 분류는 011과 동일(Lines data source ID 누락·권한 오류도 `config`)
     - `/passages/[id]/page.tsx`: `<Suspense>` 안에서 `params`/`searchParams` 해석 → `loadPassage` → 성공 시 `Passage`만 클라이언트 컴포넌트로 전달, 실패 시 `PassageErrorState`
     - [다음 예문] 계산: 캐시된 목록(`loadPassageSummaries`) + `parseFilter(searchParams)` + `getNextPassageId`로 서버에서 `nextHref` 계산(마지막이면 `/` + 필터 쿼리)
   - 수용 기준
-    - [ ] 창세기 1장이 31줄, 애국가 `Label`(`1절`/`후렴`)이 Badge로 분리되어 표시된다
-    - [ ] 같은 예문 재진입 시 노션을 다시 호출하지 않는다(서버 로그로 확인)
-    - [ ] 없는 ID → notFound 안내, 줄이 없는 예문 → empty 안내(S6 1차)
+    - [x] 창세기 1장이 31줄, 애국가 `Label`(`1절`/`후렴`)이 Badge로 분리되어 표시된다
+    - [x] 같은 예문 재진입 시 노션을 다시 호출하지 않는다(서버 로그로 확인)
+    - [x] 없는 ID → notFound 안내, 줄이 없는 예문 → empty 안내(S6 1차)
   - 테스트 체크리스트 (Playwright MCP)
-    - [ ] 정상: 목록에서 창세기 1장 카드 클릭 → 줄 수 31, 첫 줄·마지막 줄 텍스트가 노션과 일치
-    - [ ] 정상: 애국가 → `Label`(`1절`/`후렴`)이 Badge로 분리되고 본문에는 라벨이 없음, 영어 글 → 줄 수와 텍스트 일치
+    - [x] 정상: 목록에서 창세기 1장 카드 클릭 → 줄 수 31, 첫 줄·마지막 줄 텍스트가 노션과 일치
+    - [x] 정상: 애국가 → `Label`(`1절`/`후렴`)이 Badge로 분리되고 본문에는 라벨이 없음, 영어 글 → 줄 수와 텍스트 일치
     - [ ] 정상: 필터 쿼리를 가진 채 진입 → `nextHref`가 필터 목록의 다음 항목, 마지막 예문이면 `/` + 필터 쿼리
-    - [ ] 정상: 같은 예문 재진입/새로고침 → 서버 로그에 노션 줄 조회 호출 추가 없음
-    - [ ] 오류: `/passages/존재하지않는ID` → notFound 안내 + [목록으로] 동작
-    - [ ] 오류: Lines 행이 없는 예문 → "노션 Lines DB에 이 예문의 줄을 추가하세요" 안내
+    - [x] 정상: 같은 예문 재진입/새로고침 → 서버 로그에 노션 줄 조회 호출 추가 없음
+    - [x] 오류: `/passages/존재하지않는ID` → notFound 안내 + [목록으로] 동작
+    - [x] 오류: Lines 행이 없는 예문 → "노션 Lines DB에 이 예문의 줄을 추가하세요" 안내
     - [ ] 오류: 토큰 틀림/네트워크 차단/Lines DB 통합 연결 해제 → config/transient 안내와 복구 버튼
-    - [ ] 엣지: Lines 행을 `Line Number`와 다른 순서로 입력해도(행을 섞어 입력) `Line Number` 순으로 표시
-    - [ ] 엣지: `Text`가 빈 행, `Line Number`가 빈 행, `Label`이 빈 행 → 앞의 둘은 줄에서 제외되고 서버 로그에 건너뜀 기록, `Label` 빈 행은 배지 없이 표시
-    - [ ] 엣지: 다른 예문에 연결된 Lines 행이 섞이지 않음(`Passage` 관계 필터), 줄이 100개를 넘는 예문(페이지네이션)은 전부 수집됨
-    - [ ] S4: 응답 본문에 토큰 0건, 공통: 콘솔 오류 0건
-  - 테스트 결과: (미수행)
+    - [x] 엣지: Lines 행을 `Line Number`와 다른 순서로 입력해도(행을 섞어 입력) `Line Number` 순으로 표시
+    - [x] 엣지: `Text`가 빈 행, `Line Number`가 빈 행, `Label`이 빈 행 → 앞의 둘은 줄에서 제외되고 서버 로그에 건너뜀 기록, `Label` 빈 행은 배지 없이 표시
+    - [x] 엣지: 다른 예문에 연결된 Lines 행이 섞이지 않음(`Passage` 관계 필터), 줄이 100개를 넘는 예문(페이지네이션)은 전부 수집됨
+    - [x] S4: 응답 본문에 토큰 0건, 공통: 콘솔 오류 0건
+  - 테스트 결과: (2026-10-05, `next build && next start -p 3100`, 노션 실호출, 기준선 Passages 4행) `tsc`/`lint`/`build` 통과(`/passages/[id]`는 `◐` PPR, `.env` 존재 상태로 빌드). **정상**: 창세기 1장 31줄, 애국가 16줄(`1절`/`후렴` Badge 분리, 본문에 라벨 없음, Playwright `innerText`로 확인), The Road Not Taken 10줄. **재진입**: 같은 예문을 3회 요청해도 서버 로그의 `[notion] 줄 조회` 증가 없음(4건 최초 조회 후 고정). **오류**: `Empty Passage Sample` → '노션 Lines DB에 이 예문의 줄을 추가하세요'와 [예문 목록으로], 없는 ID(`zzz`, 한글 ID) → 본문에 `NEXT_HTTP_ERROR_FALLBACK;404`와 noindex(스트리밍이라 HTTP 상태는 200). 애국가 페이지 콘솔 오류 0건. **결정**: `cacheTag`에 `passage-<id>`와 `passages` 병행, `cacheLife` stale 30·expire 600 추가, `classifyByProbe(target)` 일반화(lines는 `linesDataSourceId`로 `dataSources.retrieve`), `safeDecode`와 `SearchParamsLike` 어댑터, `PassageScreen`에서 `connection()` 호출(오류 화면 박제 방지), `TypingScreen`의 `nextHref`/`listHref`는 `/dev/typing-ui`가 쓰므로 optional, 예문별 마지막 성공값 Map(`globalThis`)은 단일 프로세스에서만 보장. **깨진 % 인코딩**: `/passages/%E0%A4%A`는 `PassageScreen`에 도달하기 전에 Next 라우터가 평문 500을 반환해 `safeDecode`로는 막을 수 없었다. `src/proxy.ts`(matcher `/passages/:path*`)에서 디코드 실패 경로를 평문 404로 응답하도록 추가해 `%E0%A4%A`와 `%` 모두 404 확인(Task 018 정리 때 유지 여부 재검토). **추가 확인(노션 SDK 직접 조회 대조)**: 창세기 1장 31줄과 첫·마지막 줄 텍스트가 노션과 일치, HTML에서 토큰 0건(`/`, `/passages/[id]`)·`.next/static` 0건. **노션 데이터 조작 검증(사용자 조작, 2026-10-05)**: The Road Not Taken에서 8↔10 `Line Number`를 바꾸자 화면은 `Line Number` 순서 유지, 9번 `Label` 삭제 시 Badge 없이 표시, 7→6 중복 시 `duplicate-line-number` 경고(행 id만)와 응답 순서 유지, `test` 예문의 빈 `Text`(`empty-text`)·`Line Number` 없음(`missing-line-number`) 행은 줄에서 제외되고 로그에 행 id와 사유 코드만 기록(본문·라벨 없음), 유효한 줄이 0개가 되면 empty 안내. `Empty Passage Sample`에 유효한 줄 1개를 추가하면 그 예문만 1줄이고 다른 예문(31·16·10줄)에는 섞이지 않음. 모두 원복 확인. **페이지네이션**: 100줄 초과 예문이 없어 `page_size: 2` 임시 실험(창세기 31줄 전부 수집, 임시 코드 원복과 `git diff` 확인). **config**: 틀린 토큰으로 기동 시 '노션 연결 설정을 확인해 주세요' 안내(관찰: `@notionhq/client` 경고 로그가 응답 헤더 전체를 출력해 서버 로그에 쿠키 값이 남는다, 토큰은 아님). **미확인**: 네트워크 차단(Node `fetch`가 `HTTP(S)_PROXY`를 무시해 차단되지 않음)과 Lines DB 통합 연결 해제의 config/transient 복구(사용자가 연결 해제는 하지 않기로 함), 영어 글 텍스트 대조, 필터 쿼리 `nextHref`(Task 014 이후), 375px 레이아웃
 
 - **Task 013: IME 대응 타이핑 입력 엔진 훅 구현**
   - 관련: F003, F005, F012, F013, PRD 7.3/7.4/7.5/7.7, S2
