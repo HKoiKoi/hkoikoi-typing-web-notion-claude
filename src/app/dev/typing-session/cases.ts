@@ -363,6 +363,95 @@ export const sessionCases: LabCase[] = [
     })(),
     expected: [null, null, []],
   },
+  // 줄 전환 직후 잔여 Enter 방어 (PRD 7.3: 이벤트 순서와 무관하게 Enter 한 번으로 동작)
+  {
+    group: "잔여 Enter 방어",
+    name: "줄 전환 직후 빈 입력창의 비조합 Enter(100ms 이내)는 reject 없이 무시",
+    actual: view(
+      run(["ab", "c"], [typeText("ab", 0), enter("ab", false, 10), enter("", false, 110)]),
+    ),
+    expected: {
+      status: "typing",
+      lineIndex: 1,
+      buffer: "",
+      acc: { typed: 2, mistakes: 0 },
+      rejectSeq: 0,
+    },
+  },
+  {
+    group: "잔여 Enter 방어",
+    name: "조합 확정 Enter의 두 번째 keydown(무시 표식 소진) 뒤 또 오는 Enter도 reject 없음",
+    actual: view(
+      run(["닭이", "b"], [
+        compStart,
+        typeComposing("닭이", 0),
+        enter("닭이", true, 10),
+        compEnd("닭이", 20),
+        enter("", false, 30),
+        enterUp,
+        enter("", false, 60),
+      ]),
+    ),
+    expected: {
+      status: "typing",
+      lineIndex: 1,
+      buffer: "",
+      acc: { typed: 2, mistakes: 0 },
+      rejectSeq: 0,
+    },
+  },
+  {
+    group: "잔여 Enter 방어",
+    name: "줄 전환 1.5초 뒤 일부러 누른 빈 입력 Enter는 reject 1회",
+    actual: view(
+      run(["ab", "c"], [typeText("ab", 0), enter("ab", false, 10), enter("", false, 1500)]),
+    ),
+    expected: {
+      status: "typing",
+      lineIndex: 1,
+      buffer: "",
+      acc: { typed: 2, mistakes: 0 },
+      rejectSeq: 1,
+    },
+  },
+  {
+    group: "잔여 Enter 방어",
+    name: "줄 전환 직후라도 글자가 있는 불일치 Enter는 reject 1회",
+    actual: view(
+      run(["ab", "c"], [
+        typeText("ab", 0),
+        enter("ab", false, 10),
+        typeText("x", 50),
+        enter("x", false, 100),
+      ]),
+    ),
+    expected: {
+      status: "typing",
+      lineIndex: 1,
+      buffer: "x",
+      acc: { typed: 3, mistakes: 1 },
+      rejectSeq: 1,
+    },
+  },
+  {
+    group: "잔여 Enter 방어",
+    name: "Enter 키 반복(repeat)은 판정하지 않는다(전환 1회, reject 0회)",
+    actual: view(
+      run(["ab", "ab", "c"], [
+        typeText("ab", 0),
+        enter("ab", false, 10),
+        { kind: "keydown-enter", composingFlag: false, value: "", now: 600, repeat: true },
+        { kind: "keydown-enter", composingFlag: false, value: "", now: 640, repeat: true },
+      ]),
+    ),
+    expected: {
+      status: "typing",
+      lineIndex: 1,
+      buffer: "",
+      acc: { typed: 2, mistakes: 0 },
+      rejectSeq: 0,
+    },
+  },
 ];
 
 export function runSessionCases(): LabResult[] {

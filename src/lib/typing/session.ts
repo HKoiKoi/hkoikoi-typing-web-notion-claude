@@ -36,7 +36,15 @@ export type TypingSessionState = {
   rejectSeq: number;
   /** 불일치 Enter 이후 입력이 바뀌기 전까지 true("줄이 일치하지 않습니다" 표시용) */
   mismatch: boolean;
+  /** 마지막 줄 전환(advance) 시각(ms). 전환 직후 따라오는 Enter를 거르는 데 쓴다. 전환 전에는 null */
+  lastAdvanceAt: number | null;
 };
+
+/**
+ * 줄 전환 직후 이 시간 안에 입력창이 빈 채로 오는 비조합 Enter는 같은 Enter 입력의 잔여 keydown으로 보고 무시한다.
+ * 이벤트 순서(IME 구현 차이)와 무관하게 오판(reject)을 막기 위한 안전망이다(PRD 7.3).
+ */
+export const STRAY_ENTER_WINDOW_MS = 300;
 
 /** reducer 입력 이벤트. now는 호출측이 performance.now()로 읽어 넣는다. */
 export type TypingSessionEvent =
@@ -55,6 +63,8 @@ export type TypingSessionEvent =
       composingFlag: boolean;
       value: string;
       now: number;
+      /** 키를 누르고 있어 반복 발생한 keydown(`e.repeat`). 반복 Enter는 판정하지 않는다. */
+      repeat?: boolean;
     }
   | { kind: "keyup-enter" }
   | { kind: "reset" };
@@ -72,6 +82,7 @@ export function createInitialSessionState(): TypingSessionState {
     acc: { typed: 0, mistakes: 0 },
     rejectSeq: 0,
     mismatch: false,
+    lastAdvanceAt: null,
   };
 }
 
@@ -131,6 +142,7 @@ function applyAction(
         committedPerLine,
         finishedAt: now,
         mismatch: false,
+        lastAdvanceAt: now,
       };
     }
     return {
@@ -140,6 +152,7 @@ function applyAction(
       lastConfirmed: "",
       committedPerLine,
       mismatch: false,
+      lastAdvanceAt: now,
     };
   }
   return state;
@@ -198,15 +211,24 @@ export function sessionReducer(
     }
 
     case "keydown-enter": {
+      // 키를 누르고 있어 반복되는 Enter는 한 번의 입력으로 본다(첫 keydown만 판정).
+      if (event.repeat) return state;
       const value = stripNewlines(event.value);
       const result = stepPendingEnter(state.pending, {
         kind: "keydown-enter",
         composingFlag: event.composingFlag,
         matches: isLineComplete(target, value),
       });
+      // 줄 전환 직후 빈 입력창에 오는 비조합 Enter는 잔여 keydown이므로 오판(reject)으로 처리하지 않는다.
+      const strayAfterAdvance =
+        result.action === "reject" &&
+        !event.composingFlag &&
+        value === "" &&
+        state.lastAdvanceAt !== null &&
+        event.now - state.lastAdvanceAt < STRAY_ENTER_WINDOW_MS;
       return applyAction(
         { ...state, pending: result.state },
-        result.action,
+        strayAfterAdvance ? "none" : result.action,
         lines.length,
         event.now,
       );

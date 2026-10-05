@@ -132,6 +132,7 @@ export function useTypingSession(lines: Line[]): UseTypingSessionResult {
         composingFlag: e.nativeEvent.isComposing || e.keyCode === 229,
         value: e.currentTarget.value,
         now: performance.now(),
+        repeat: e.repeat,
       });
     },
     onKeyUp: (e) => {

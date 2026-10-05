@@ -221,7 +221,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 - 입력은 현재 줄 하나에 대한 버퍼 하나이며, 줄이 바뀌면 버퍼를 비운다.
 - **Enter 동작**: 입력이 줄 전체와 일치할 때만 다음 줄로 이동한다. 일치하지 않으면(부족하거나 틀림) 이동하지 않고 "줄이 일치하지 않습니다" 표시(짧은 강조 효과)로 알린다. 입력창에 줄바꿈 문자는 들어가지 않는다.
 - **조합 중 Enter는 보류**: 조합 중(`isComposing || keyCode === 229`)에 Enter가 오면 줄 전환을 바로 하지 않고 `pendingEnter = true`만 기록한다. `compositionend` 직후 확정된 값으로 줄 일치를 판정해, 일치하면 바로 전환하고 `pendingEnter`를 해제한다. 조합 중이 아닐 때의 Enter는 즉시 판정한다. 이벤트 순서에 의존하지 않고 Enter 한 번으로 동작해야 한다. 지원·검증 대상 환경은 Chrome + macOS 한글 IME이다(10장 12).
-- **Chrome(macOS) 실측**: 조합 확정 Enter 한 번에 keydown이 두 번 온다. `keydown Enter(isComposing=true, keyCode=229)` → `compositionend` → `keydown Enter(isComposing=false, keyCode=13)`. 두 번째 Enter는 첫 Enter가 이미 줄을 전환해 입력창이 비어 있는 상태에서 오므로, 그대로 즉시 판정하면 불일치로 오판한다. 따라서 보류된 Enter를 `compositionend`에서 판정한 직후의 비조합 Enter 1개는 무시하고(`suppressEnter`), Enter keyup·새 조합 시작·조합 중 Enter에서 무시 상태를 해제한다.
+- **Chrome(macOS) 실측**: 조합 확정 Enter 한 번에 keydown이 두 번 온다. `keydown Enter(isComposing=true, keyCode=229)` → `compositionend` → `keydown Enter(isComposing=false, keyCode=13)`. 두 번째 Enter는 첫 Enter가 이미 줄을 전환해 입력창이 비어 있는 상태에서 오므로, 그대로 즉시 판정하면 불일치로 오판한다. 따라서 보류된 Enter를 `compositionend`에서 판정한 직후의 비조합 Enter 1개는 무시하고(`suppressEnter`), Enter keyup·새 조합 시작·조합 중 Enter에서 무시 상태를 해제한다. 이벤트 순서가 달라도 오판하지 않도록 안전망을 둔다: 줄 전환 후 300ms 안에 빈 입력창으로 오는 비조합 Enter와 키 반복(`e.repeat`) Enter는 판정하지 않는다(Task 015 수동 검증에서 줄 전환 직후 "줄이 일치하지 않습니다"가 표시되는 오판이 보고되어 추가).
 - **종료**: 마지막 줄에서 일치 상태로 Enter를 누르면 종료하고 결과 뷰로 이동한다.
 - **자동 스크롤**: 줄 전환 시 새 현재 줄이 본문 영역 안(가능하면 세로 중앙 부근)에 오도록 스크롤한다. 사용자의 `prefers-reduced-motion` 설정이 있으면 부드러운 스크롤을 끈다.
 - 이전 줄로 돌아가기는 지원하지 않는다. 완료한 줄은 수정할 수 없다.
