@@ -6,7 +6,7 @@
 
 노션 타이핑 연습은 노션으로 본문을 관리하는 본인 1인(로그인 없음)을 위한 "내 본문으로 하는 타이핑 연습" 도구로 다음 기능을 제공합니다:
 
-- **노션 예문 연동 및 캐싱 (F001, F008, F015)**: 서버 전용으로 노션 DB 프로퍼티(목록)와 페이지 본문 블록(줄)을 조회하고 `use cache` + 5분 재검증으로 캐싱
+- **노션 예문 연동 및 캐싱 (F001, F008, F015)**: 서버 전용으로 노션 Passages DB(예문 목록)와 Lines DB(줄 단위 본문)를 조회하고 `use cache` + 5분 재검증으로 캐싱
 - **예문 탐색 (F002, F007)**: 분류/언어/난이도/태그 클라이언트 필터, URL 쿼리 유지, 같은 필터 기준의 [다음 예문]
 - **여러 줄 타이핑과 실시간 판정 (F003, F004, F005, F012, F013, F014)**: 현재 줄 글자별 판정, 한글 조합 중 상태 처리, 조합 중 Enter 보류(`pendingEnter`), 자동 스크롤과 진행도
 - **결과 요약 (F006)**: 정확도, 소요 시간, 타수(음절/분), WPM, 오타 수
@@ -102,7 +102,7 @@
 | # | 항목 (PRD 10장) | 현재안/권장안 | 결정 | 결정 Task |
 |---|----------------|-------------|------|----------|
 | D1 | `server-only` 패키지 도입 (10-6) | 도입. `src/lib/notion/*`와 서버 래퍼 첫 줄에 `import "server-only"` | 확정: 도입(`server-only@0.0.1` 정확 고정 설치) | 002 |
-| D2 | 환경 변수 이름 (10-6) | `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID` (`NEXT_PUBLIC_` 금지), 로컬은 `.env.local` | 확정: 권장안 그대로 | 002 |
+| D2 | 환경 변수 이름 (10-6) | `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID` (`NEXT_PUBLIC_` 금지), 로컬은 `.env.local` | 확정: 권장안 그대로 (D12로 `NOTION_LINES_DATA_SOURCE_ID` 추가) | 002 |
 | D3 | `@notionhq/client` 버전 (10-2) | 설치 시점 최신 안정 버전을 `^` 없이 정확히 고정, API 버전은 SDK 기본값(`2025-09-03`) | 확정: `5.27.0` 정확 고정, 기본 API 버전 `2025-09-03`(`Client.js`의 `defaultNotionVersion`으로 확인) | 002 |
 | D4 | 순수 함수 검증 방식 | Vitest 미도입. 개발 전용 `/dev/typing-lab` 페이지 + Playwright MCP로 검증 | 확정 | 002 |
 | D5 | 한글 타수 기준 (10-3) | 음절 기준 유지 | 확정: 음절 기준 | 002 |
@@ -112,6 +112,7 @@
 | D9 | 줄 최대 길이 제한 (10-9), 빈 줄 Enter (10-10) | 제한 없음(입력 줄 줄바꿈 허용), 빈 줄은 건너뜀 | 확정: 길이 제한 없음, 빈 줄은 건너뜀 | 002 |
 | D10 | 입력 요소 제어 방식 (10-1b, 1c) | 스파이크 결과로 controlled/uncontrolled 확정 | 미정 | 004 |
 | D11 | 재검증 실패 시 기존 캐시 유지 여부 (10-1a) | 스파이크 결과로 확정, 미유지 시 대응책 기록 | 미정 | 005 |
+| D12 | 노션 DB 구조 (PRD 5장, 10-11) | 단일 DB + 페이지 본문 블록 | 확정: DB 2개 — Passages(예문 속성) + Lines(줄 단위 본문: `Text`, `Passage` 관계, `Line Number`, `Label`). 속성명·select 옵션 값은 영어. 환경 변수 `NOTION_LINES_DATA_SOURCE_ID` 추가 (2026-10-05) | 002 |
 
 ## 의존 관계 요약
 
@@ -158,7 +159,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
 ### Phase 1: 애플리케이션 골격 구축 및 위험 조기 검증
 
 **목표**: 착수 전 결정 사항을 확정하고, 전체 라우트·타입·모듈 경계를 만든 뒤, 가장 위험한 두 영역(IME, 노션 캐시)을 스파이크로 먼저 검증한다.
-**Phase 완료 조건**: 결정 기록 D1~D11 확정, `/`와 `/passages/[id]` 골격이 `cacheComponents: true` 상태에서 `npm run build` 통과, 스파이크 결과 문서화.
+**Phase 완료 조건**: 결정 기록 D1~D12 확정, `/`와 `/passages/[id]` 골격이 `cacheComponents: true` 상태에서 `npm run build` 통과, 스파이크 결과 문서화.
 
 - **Task 002: 착수 전 미결 사항 결정 및 개발 환경 준비** - 우선순위
   - 관련: F008, PRD 6장/10장(2, 3, 4, 5, 6, 7, 9, 10)
@@ -166,13 +167,13 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 구현 사항
     - 결정 기록 D1~D9 확정 후 이 문서 표와 PRD 10장에 반영 (D4는 Vitest 미도입으로 확정됨)
     - `@notionhq/client`를 정확한 버전으로 설치(D3), D1 채택 시 `server-only` 설치
-    - `.env.local`에 D2 이름으로 노션 토큰·data source ID 등록, `.env.example`(키만, 값 없음) 작성 시 `.gitignore`의 `.env*` 규칙에 `!.env.example` 예외 추가
-    - 노션 측 준비: PRD 5장 프로퍼티(제목/언어/분류/순서/난이도/태그/사용)로 DB 구성, 통합(Integration) 연결, "Copy data source ID"로 ID 확보, 검증용 예문 등록(창세기 1장 31줄, 애국가 라벨 포함, 영어 글 1편, 본문 빈 예문 1편, `사용` 해제 예문 1편)
+    - `.env.local`에 D2·D12 이름으로 노션 토큰·Passages data source ID·Lines data source ID 등록, `.env.example`(키만, 값 없음) 작성 시 `.gitignore`의 `.env*` 규칙에 `!.env.example` 예외 추가
+    - 노션 측 준비(D12): PRD 5장대로 DB 2개 구성 — Passages(`Title`/`Language`/`Category`/`Order`/`Difficulty`/`Tags`/`Enabled`)와 Lines(`Text`/`Passage` 관계/`Line Number`/`Label`), 두 DB 모두 통합(Integration) 연결, "Copy data source ID"로 ID 2개 확보, 검증용 예문 등록(창세기 1장 31줄, 애국가 16줄과 `Label`, 영어 글 1편, 줄이 없는 예문 1편, `Enabled` 해제 예문 1편). 줄은 CSV import 권장
   - 수용 기준
     - [x] D1~D9가 "결정" 열에 기록되고 PRD 10장과 모순이 없다
     - [x] `package.json`에 `@notionhq/client`가 범위 지정자 없이 고정되어 있다
     - [x] 노션 토큰이 커밋 대상 파일 어디에도 없다(`git grep`으로 0건)
-    - [ ] 검증용 노션 DB와 예문 5종이 준비되어 있다 (사용자 수동 작업, 미완료)
+    - [ ] 검증용 노션 DB 2개(Passages, Lines)와 예문 5종(Lines 행 포함)이 준비되어 있다 (사용자 수동 작업. Passages DB 생성됨, Lines DB와 행 입력 미완료)
     - [x] `npx tsc --noEmit`, `npm run lint` 통과
   - 테스트 체크리스트
     - [x] 정적: `git grep`으로 토큰 문자열 0건, `.env.local`이 `git status`에 나타나지 않음
@@ -226,6 +227,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 의존: 002, 003 (004와 병렬 가능)
   - 구현 사항
     - `src/lib/notion/client.ts`(서버 전용, D1 반영)에서 환경 변수 검증 후 Client 생성, `dataSources.query` + `filter_properties` + `collectPaginatedAPI`로 목록 원본 조회
+    - Lines data source에서 `Passage` 관계 `contains` 필터 + `Line Number` 오름차순 정렬 쿼리가 동작하는지, `filter_properties`가 프로퍼티 이름과 ID 중 무엇을 받는지 확인(PRD 10장 1(d))
     - `'use cache'` + `cacheLife({ revalidate: 30 })`(스파이크에서는 짧게) + `cacheTag('passages')` 조합으로 stale-while-revalidate 확인: 노션 수정 → 주기 경과 → 새로고침 2회째 반영
     - 재검증 실패 시 기존 캐시 유지 여부 확인: 토큰을 일부러 틀리게 바꾼 뒤 주기 경과 후 새로고침 → 이전 데이터 유지/오류 여부 기록(D11). 미유지 시 대응책(캐시 밖 래퍼에서 transient 처리 등) 기록
     - `use cache` 함수가 실패 시 throw하면 오류 결과가 캐시되지 않음을 확인
@@ -250,7 +252,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 구현 사항
     - `src/types/passage.ts`: `Language`, `Difficulty`, `PassageSummary`, `Passage`, `Line { text; label? }`, `PassageResult<T>`(`kind: 'config' | 'transient' | 'notFound' | 'empty'`), `PassageFilter { category?; lang?; difficulty?; tag? }`
     - `src/types/typing.ts`: `CharState`(`correct | incorrect | incorrectSpace | pending | current | composing | extra`), `LineJudgement`, `TypingStats`, `TypingStatus`(`idle | typing | finished`), `TypingResult`
-    - 순수 함수 시그니처만 먼저 선언(구현은 Task 010): `normalizeLine`, `splitLabel`, `toCodePoints`, `judgeLine`, `accumulateStats`, `computeMetrics`, `truncateToLine`
+    - 순수 함수 시그니처만 먼저 선언(구현은 Task 010): `normalizeLine`, `toCodePoints`, `judgeLine`, `accumulateStats`, `computeMetrics`, `truncateToLine`
     - 목록 필터/정렬 시그니처: `src/lib/passages/filter.ts`의 `parseFilter(searchParams)`, `filterPassages`, `sortPassages`, `getNextPassageId`
     - 노션 모듈 경계: `src/lib/notion/`(서버 전용: client, 캐시 조회 함수, 매핑) ↔ `src/lib/passages/`(서버 래퍼 `loadPassageSummaries`/`loadPassage` → `PassageResult`) ↔ 페이지. 클라이언트 컴포넌트로는 `PassageSummary[]`/`Passage`만 전달
   - 수용 기준
@@ -274,7 +276,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - `src/app/globals.css`의 `:root`/`.dark`와 `@theme inline`에 판정 토큰 추가: `--typing-correct`, `--typing-incorrect`, `--typing-incorrect-space-bg`, `--typing-pending`, `--typing-current`, `--typing-composing`, `--typing-extra`. 대비 4.5:1 이상 확인 후 값 기록
     - shadcn 추가(`npx shadcn@latest add`로만): `progress`, `toggle-group`(필터 UI 방식에 따라 기존 `select`와 택일), 필요 시 `scroll-area`
     - L2 공통: `PassageErrorState`(kind → 문구/아이콘/복구 버튼 매핑, 기존 `EmptyState` 조합), `StatItem`(라벨 + 값 + 단위)
-    - 더미 데이터 `src/lib/mock/passages.ts`: 창세기 1장 31줄, 애국가(라벨 `(1절)`/`(후렴)`), 영어 글, 각 분류/난이도/태그 조합 10건 이상
+    - 더미 데이터 `src/lib/mock/passages.ts`: 창세기 1장 31줄, 애국가(`Label` `1절`/`후렴`), 영어 글, 각 분류/난이도/태그 조합 10건 이상
   - 수용 기준
     - [ ] 판정 토큰 7종의 라이트/다크 대비 측정값이 이 Task의 `테스트 결과`에 기록되고 모두 4.5:1 이상
     - [ ] 새 L1 컴포넌트가 모두 shadcn CLI로 추가되었다
@@ -301,7 +303,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 테스트 체크리스트 (Playwright MCP)
     - [ ] 정상: `/` → 더미 데이터 카드 수와 결과 수 표시 일치
     - [ ] 정상: 분류/언어/난이도/태그 각각과 조합 선택 → 카드 수 기대값 일치, URL 쿼리 갱신
-    - [ ] 정상: `/?lang=en&difficulty=쉬움` 직접 진입 → 필터 상태 복원
+    - [ ] 정상: `/?lang=en&difficulty=Easy` 직접 진입 → 필터 상태 복원
     - [ ] 정상: 카드 링크 `href`에 현재 필터 쿼리 포함(`browser_evaluate`)
     - [ ] 오류/엣지: 결과 0건 조합 → 0건 안내와 [조건 초기화] 동작, 존재하지 않는 값의 쿼리(`?category=없음`)에서 오류 없이 0건 처리
     - [ ] 엣지: `browser_press_key` Tab/Enter만으로 필터 → 카드 선택, `browser_resize` 375px/768px/1280px에서 1열/2열/3열
@@ -318,7 +320,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
       - `typing-stats.tsx`: 경과 시간, "n / 총 줄 수" + Progress, 타수(음절/분), 정확도(%)
       - `result-view.tsx`: 평균 타수(CPM), 정확도, 연습 시간, WPM, 오타 수, 총 줄 수, [다음 예문] [다시 도전] [목록으로]
     - 하드코딩된 `CharState` 배열로 모든 글자 상태와 "줄이 일치하지 않습니다" 강조 효과를 미리보기
-    - 오류 화면: `PassageErrorState`로 notFound("목록으로"), empty("노션 페이지 본문에 줄을 추가하세요"), config, transient("다시 시도") 렌더
+    - 오류 화면: `PassageErrorState`로 notFound("목록으로"), empty("노션 Lines DB에 이 예문의 줄을 추가하세요"), config, transient("다시 시도") 렌더
     - 접근성 골격: 숨은 입력창 `aria-label`, 현재 줄 `aria-current="true"`, 줄 완료/결과 영역 `aria-live="polite"`(글자 단위 낭독 없음)
   - 수용 기준
     - [ ] 31줄 더미 예문에서 세 줄 상태와 7가지 글자 상태가 색 없이도(흑백 캡처) 구분된다
@@ -342,20 +344,20 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 관련: F004, F005, F006, F012, F015, PRD 7.1/7.2/7.5/7.6/7.8
   - 의존: 006 (Phase 2와 병렬 가능)
   - 구현 사항
-    - `src/lib/typing/normalize.ts`: `normalizeLine`(NFC, 탭→공백, 연속 공백 1칸, trim), `splitLabel`(`^\([^)]{1,10}\)\s` 앞 라벨 분리, 긴 괄호·줄 중간 괄호는 본문 유지)
+    - `src/lib/typing/normalize.ts`: `normalizeLine`(NFC, 탭→공백, 연속 공백 1칸, trim). 라벨은 Lines DB의 `Label` 속성을 쓰므로 괄호 파싱은 없다
     - `src/lib/typing/judge.ts`: `toCodePoints`(NFC 후 `Array.from`), `judgeLine(target, input, { composing })` → `CharState[]`(확정 구간 즉시 판정, 조합 중 마지막 글자는 `composing` 중립, 초과분 `extra`, 틀린 공백 `incorrectSpace`), `isLineComplete`
     - `src/lib/typing/metrics.ts`: `accumulateStats(prevCommitted, nextCommitted, target, acc)` — 이전/새 확정 문자열 차이로 새로 추가·변경된 위치만 입력 수와 오타 수에 더함(같은 위치 같은 글자 중복 집계 금지, 백스페이스 후 재입력은 새 입력, 음절별 `compositionend` 가정 없음), `computeMetrics({ totalChars, typed, mistakes, elapsedMs })` → 정확도/CPM/WPM(0분 나눗셈 방지)
     - `src/lib/typing/truncate.ts`: `truncateToLine(input, target)` — 호출 측에서 조합 중이 아닐 때만 사용
     - 개발 전용 검증 페이지 `src/app/dev/typing-lab/page.tsx`: 아래 케이스 표(입력, 기대값)를 렌더하고 각 케이스의 통과/실패와 전체 요약(`통과 n / 전체 m`)을 표시한다. 프로덕션에서는 `notFound()`. 케이스 데이터는 함수 호출 결과와 기대값을 나란히 보여줘 Playwright로 읽기 쉽게 한다
   - 수용 기준
-    - [ ] 정규화/라벨: `(1절) 동해물과…` → label `(1절)`, `(Note: this is long) …`은 본문 유지, 탭·연속 공백·양끝 공백 처리
+    - [ ] 정규화: 탭·연속 공백·양끝 공백 처리, 줄 앞 `(1절)`·`(Note: …)` 같은 괄호는 본문 글자로 유지
     - [ ] 판정: 겹받침(닭, 읽)·이중모음(왜, 의) 조합 중 상태가 `incorrect`로 나오지 않는다, 영어 대소문자·스마트 따옴표는 그대로 비교
     - [ ] 집계: "가나" → 백스페이스 → "가다" 입력 시 입력 수 3, 오타 수는 정의대로 계산된다, 같은 확정 문자열 재전달 시 수치 불변
     - [ ] 지표: 고정 입력(글자 수, 경과 ms)에 대한 CPM/WPM/정확도가 7.6 식과 일치
     - [ ] 함수들이 React/DOM/Next를 import하지 않는다
     - [ ] `/dev/typing-lab`의 전체 케이스가 통과한다
   - 테스트 체크리스트 (Playwright MCP, `/dev/typing-lab`)
-    - [ ] 정상 (정규화/라벨): `(1절) 동해물과 백두산이` → label `(1절)`, text `동해물과 백두산이` / `\t가  나 ` → `가 나`
+    - [ ] 정상 (정규화): `\t가  나 ` → `가 나`, `(1절) 동해물과` → 변경 없이 본문 유지
     - [ ] 정상 (판정): target `닭`, input `닭` → `correct`. target `읽`, 조합 중 input `일`(마지막 글자) → `composing`(`incorrect` 아님). target `왜`, 조합 중 `ㅇ`/`와` 단계 → `composing`
     - [ ] 정상 (지표): totalChars 300, elapsedMs 60000 → CPM 300, WPM 60. typed 100, mistakes 5 → 정확도 95%
     - [ ] 오류 (판정): target `abc`, input `abd` → 3번째 `incorrect`. target `a b`, input `a  `(틀린 공백 위치) → `incorrectSpace`. 대소문자 `A` vs `a` → `incorrect`. 스마트 따옴표 `’` vs `'` → `incorrect`
@@ -371,53 +373,53 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 의존: 005, 006, 008
   - 구현 사항
     - `src/lib/notion/passages.ts`(서버 전용): `getPassageSummariesCached()` — `'use cache'`, `cacheLife({ revalidate: 300 })`, `cacheTag('passages')`, `collectPaginatedAPI`로 100건 초과 전부 수집, `filter_properties`로 필요한 프로퍼티만 수신, 실패 시 throw
-    - `src/lib/notion/mappers.ts`: 프로퍼티 이름 기반 매핑, `in_trash`만 삭제 판정, 언어 ko/en 외·필수값 누락·타입 불일치 행은 건너뛰고 로그, `사용 === false` 제외(프로퍼티 없으면 전부 사용), 분류 기본 "기타", 태그 기본 `[]`
+    - `src/lib/notion/mappers.ts`: 프로퍼티 이름(`Title`/`Language`/`Category`/`Order`/`Difficulty`/`Tags`/`Enabled`) 기반 매핑, `in_trash`만 삭제 판정, 언어 ko/en 외·필수값 누락·타입 불일치 행은 건너뛰고 로그, `Enabled === false` 제외(프로퍼티 없으면 전부 사용), 분류 기본 "기타", 태그 기본 `[]`
     - `src/lib/passages/load.ts`(캐시 밖 래퍼): try/catch로 `PassageResult` 분류 — 환경 변수 누락·`unauthorized`/`restricted_resource`/`object_not_found` → `config`, `rate_limited`/5xx/타임아웃 → `transient`, 0건 → `empty`. `isNotionClientError`/`APIErrorCode`로만 분기(`error.message` 분기 금지)
     - `/` 페이지에서 더미 데이터를 `loadPassageSummaries()` 결과로 교체, `kind`별 `PassageErrorState` 렌더
     - D11 결과에 따른 재검증 실패 대응 적용
   - 수용 기준
-    - [ ] 노션 DB의 모든 유효 행이 정렬(분류 → 순서 → 제목)되어 표시되고 `사용` 해제 행은 보이지 않는다
+    - [ ] 노션 DB의 모든 유효 행이 정렬(분류 → 순서 → 제목)되어 표시되고 `Enabled` 해제 행은 보이지 않는다
     - [ ] 행 하나의 프로퍼티를 깨뜨려도 나머지 목록은 정상 표시된다
     - [ ] 토큰 오류/빈 DB에서 각각 config/empty 안내가 나온다(S6 1차)
     - [ ] 클라이언트 번들·RSC 페이로드에 토큰 없음(S4)
   - 테스트 체크리스트 (Playwright MCP)
-    - [ ] 정상: `/` → 카드 수가 노션 유효 행 수(검증용 DB 기준 `사용` 해제·언어 불일치 제외)와 일치, 정렬이 분류 → 순서 → 제목
+    - [ ] 정상: `/` → 카드 수가 노션 유효 행 수(검증용 DB 기준 `Enabled` 해제·언어 불일치 제외)와 일치, 정렬이 분류 → 순서 → 제목
     - [ ] 정상: 카드의 분류/언어/난이도/태그 표시가 노션 값과 일치, 분류 없음 → "기타"
     - [ ] 정상: 필터 조합 → 결과 수 일치, URL 쿼리 반영
     - [ ] 오류 (config): `NOTION_TOKEN`을 틀린 값으로 바꿔 재기동 → 설정 오류 안내와 복구 버튼, 빈 화면 아님. 복구 후 정상 확인
     - [ ] 오류 (config): `NOTION_DATA_SOURCE_ID` 삭제/틀림 → 설정 오류 안내
-    - [ ] 오류 (empty): 전부 `사용` 해제(또는 빈 data source) → 0건 안내("노션 DB에 예문 행을 추가하세요")
+    - [ ] 오류 (empty): 전부 `Enabled` 해제(또는 빈 data source) → 0건 안내("노션 DB에 예문 행을 추가하세요")
     - [ ] 오류 (transient): 노션 도메인 요청 차단/오프라인 상태로 새로고침 → 일시 오류 안내와 [다시 시도], 캐시가 있으면 이전 데이터(D11)
-    - [ ] 엣지: 프로퍼티 하나를 깨뜨린 행(언어 값 `jp`, 제목 비움)이 있어도 나머지 행 정상 표시, 서버 로그에 건너뜀 기록
+    - [ ] 엣지: 프로퍼티 하나를 깨뜨린 행(`Language` 값 `jp`, `Title` 비움)이 있어도 나머지 행 정상 표시, 서버 로그에 건너뜀 기록
     - [ ] 엣지: 100건 초과 DB에서 전체 행 표시(가능하면 테스트용 DB 또는 `page_size` 축소로 확인)
     - [ ] S4: `browser_network_requests` 응답 본문과 `outerHTML`에 토큰 문자열 0건
     - [ ] 공통: 콘솔 오류 0건
   - 테스트 결과: (미수행)
 
-- **Task 012: 노션 본문 블록 조회 및 줄 파싱, 타이핑 화면 데이터 연동**
+- **Task 012: 노션 본문 줄(Lines DB) 조회·매핑 및 타이핑 화면 데이터 연동**
   - 관련: F003, F008, F009, F015, S1, S6
   - 의존: 010(정규화 함수), 011(클라이언트·래퍼 패턴)
   - 구현 사항
-    - `src/lib/notion/passage-body.ts`: `getPassageCached(id)` — `'use cache'`, `cacheLife({ revalidate: 300 })`, `cacheTag(\`passage-${id}\`)`(목록 태그 `passages`를 함께 붙일지는 구현 시 결정해 기록), page 프로퍼티 조회 + `blocks.children.list`를 `collectPaginatedAPI`로 전부 수집
-    - `src/lib/notion/blocks-to-lines.ts`(순수 함수): `paragraph`의 `rich_text` plain text 연결 → `\n` 분리 → `normalizeLine` → `splitLabel` → 빈 줄 제거. 그 외 블록 타입과 자식 블록은 건너뛰고 로그
-    - 래퍼 `loadPassage(id)`: 없는/잘못된 ID → `notFound`, 줄 0개 → `empty`, 나머지 오류 분류는 011과 동일
+    - `src/lib/notion/passage-lines.ts`: `getPassageLinesCached(id)` — `'use cache'`, `cacheLife({ revalidate: 300 })`, `cacheTag(\`passage-${id}\`)`(목록 태그 `passages`를 함께 붙일지는 구현 시 결정해 기록), Lines data source를 `Passage` 관계 `contains` 필터 + `Line Number` 오름차순 정렬로 `collectPaginatedAPI` 전부 수집, `filter_properties`로 `Text`/`Line Number`/`Label`만 수신, 실패 시 throw
+    - `src/lib/notion/lines-mapper.ts`(순수 함수): 행 → `Line` — `Text`(title) plain text → `normalizeLine`, `Label`(rich_text) plain text → `normalizeLine`(비면 `undefined`). 정규화 후 `Text`가 빈 행, `Line Number`가 빈 행, `in_trash` 행은 건너뛰고 로그. `Line Number` 기준 안정 정렬(중복은 경고 로그 후 응답 순서 유지)
+    - 래퍼 `loadPassage(id)`: 캐시된 목록(`loadPassageSummaries`)에서 id를 찾지 못하면 `notFound`(잘못된 ID, `Enabled` 해제 예문 포함), 줄 0개 → `empty`, 나머지 오류 분류는 011과 동일(Lines data source ID 누락·권한 오류도 `config`)
     - `/passages/[id]/page.tsx`: `<Suspense>` 안에서 `params`/`searchParams` 해석 → `loadPassage` → 성공 시 `Passage`만 클라이언트 컴포넌트로 전달, 실패 시 `PassageErrorState`
     - [다음 예문] 계산: 캐시된 목록(`loadPassageSummaries`) + `parseFilter(searchParams)` + `getNextPassageId`로 서버에서 `nextHref` 계산(마지막이면 `/` + 필터 쿼리)
   - 수용 기준
-    - [ ] 창세기 1장이 31줄, 애국가 라벨이 Badge로 분리되어 표시된다
+    - [ ] 창세기 1장이 31줄, 애국가 `Label`(`1절`/`후렴`)이 Badge로 분리되어 표시된다
     - [ ] 같은 예문 재진입 시 노션을 다시 호출하지 않는다(서버 로그로 확인)
-    - [ ] 없는 ID → notFound 안내, 본문 빈 예문 → empty 안내(S6 1차)
+    - [ ] 없는 ID → notFound 안내, 줄이 없는 예문 → empty 안내(S6 1차)
   - 테스트 체크리스트 (Playwright MCP)
     - [ ] 정상: 목록에서 창세기 1장 카드 클릭 → 줄 수 31, 첫 줄·마지막 줄 텍스트가 노션과 일치
-    - [ ] 정상: 애국가 → `(1절)`/`(후렴)`이 Badge로 분리되고 본문에는 라벨이 없음, 영어 글 → 줄 수와 텍스트 일치
+    - [ ] 정상: 애국가 → `Label`(`1절`/`후렴`)이 Badge로 분리되고 본문에는 라벨이 없음, 영어 글 → 줄 수와 텍스트 일치
     - [ ] 정상: 필터 쿼리를 가진 채 진입 → `nextHref`가 필터 목록의 다음 항목, 마지막 예문이면 `/` + 필터 쿼리
-    - [ ] 정상: 같은 예문 재진입/새로고침 → 서버 로그에 노션 본문 호출 추가 없음
+    - [ ] 정상: 같은 예문 재진입/새로고침 → 서버 로그에 노션 줄 조회 호출 추가 없음
     - [ ] 오류: `/passages/존재하지않는ID` → notFound 안내 + [목록으로] 동작
-    - [ ] 오류: 본문 빈 예문 → "노션 페이지 본문에 줄을 추가하세요" 안내
-    - [ ] 오류: 토큰 틀림/네트워크 차단 → config/transient 안내와 복구 버튼
-    - [ ] 엣지: 제목/목록/이미지 블록이 섞인 예문 → paragraph만 줄로 사용, 서버 로그에 건너뜀 기록
-    - [ ] 엣지: 한 블록 안의 소프트 줄바꿈 → 줄로 분리, 연 구분용 빈 블록 → 줄에서 제외
-    - [ ] 엣지: 블록 100개 초과 예문(페이지네이션) → 줄 수가 전부 수집됨
+    - [ ] 오류: Lines 행이 없는 예문 → "노션 Lines DB에 이 예문의 줄을 추가하세요" 안내
+    - [ ] 오류: 토큰 틀림/네트워크 차단/Lines DB 통합 연결 해제 → config/transient 안내와 복구 버튼
+    - [ ] 엣지: Lines 행을 `Line Number`와 다른 순서로 입력해도(행을 섞어 입력) `Line Number` 순으로 표시
+    - [ ] 엣지: `Text`가 빈 행, `Line Number`가 빈 행, `Label`이 빈 행 → 앞의 둘은 줄에서 제외되고 서버 로그에 건너뜀 기록, `Label` 빈 행은 배지 없이 표시
+    - [ ] 엣지: 다른 예문에 연결된 Lines 행이 섞이지 않음(`Passage` 관계 필터), 줄이 100개를 넘는 예문(페이지네이션)은 전부 수집됨
     - [ ] S4: 응답 본문에 토큰 0건, 공통: 콘솔 오류 0건
   - 테스트 결과: (미수행)
 
@@ -478,7 +480,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 의존: 014
   - 구현 사항
     - Playwright MCP 전체 사용자 플로우: 목록 → 필터 → 카드 → 전체 줄 입력 → 결과 → 다음 예문/다시 도전/목록으로
-    - 오류 시나리오: 토큰 오류, 빈 DB(빈 data source 또는 전부 `사용` 해제), 네트워크 오류(노션 도메인 차단 또는 오프라인), 없는 예문 ID, 본문 빈 예문, 필터 0건
+    - 오류 시나리오: 토큰 오류, 빈 DB(빈 data source 또는 전부 `Enabled` 해제), 네트워크 오류(노션 도메인 차단 또는 오프라인), 없는 예문 ID, 줄이 없는 예문, 필터 0건
     - 한글 IME 수동 시나리오(S2) Chrome·Safari·Firefox 결과 표 작성
     - S1: 노션 행 추가/본문 수정 → 5분 경과 → 새로고침 2회로 반영 확인
     - S4: `npm run build` 후 `.next/`와 네트워크 응답에서 토큰 검색
@@ -487,7 +489,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - [ ] 발견된 결함은 Phase 4 Task 또는 새 Task로 등록
   - 테스트 체크리스트 (Playwright MCP)
     - [ ] 정상: 목록 → 필터(언어/분류) → 카드 → 전체 줄 → 결과 → [다음 예문] → [다시 도전] → [목록으로] 전 구간 무중단
-    - [ ] 오류: 토큰 오류 / 빈 DB / 네트워크 오류 / 없는 예문 ID / 본문 빈 예문 / 필터 0건 각각에서 빈 화면 없이 안내와 복구 버튼, 복구 후 정상 동작
+    - [ ] 오류: 토큰 오류 / 빈 DB / 네트워크 오류 / 없는 예문 ID / 줄이 없는 예문 / 필터 0건 각각에서 빈 화면 없이 안내와 복구 버튼, 복구 후 정상 동작
     - [ ] 정상(S1): 노션 수정 → 5분 경과 → 새로고침 1회째 이전 데이터, 2회째 갱신 데이터
     - [ ] 정상(S4): 빌드 산출물과 모든 네트워크 응답에서 토큰 0건
     - [ ] 수동(S2): IME 결과 표(겹받침/이중모음/빠른 연타 × 브라우저 3종)
@@ -544,7 +546,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 의존: 016, 017
   - 구현 사항
     - 개발 전용 페이지(`/dev/*`) 제거 또는 프로덕션 비노출 확인
-    - README에 노션 설정 가이드 추가: DB 프로퍼티 구조(PRD 5장), 본문 작성 규칙(일반 텍스트 한 줄씩, 라벨 표기, 지원하지 않는 블록), 환경 변수(D2), data source ID 얻는 법
+    - README에 노션 설정 가이드 추가: DB 2개 구조(PRD 5장: Passages 속성, Lines의 `Text`/`Passage` 관계/`Line Number`/`Label`), 줄 입력 규칙(행 하나 = 한 줄, CSV import 방법), 환경 변수(D2, D12), data source ID 2개 얻는 법
     - 빌드/배포 환경에 토큰·data source ID 설정(목록 프리렌더 시 노션 호출) 확인, `npm run build && npm run start`로 프로덕션 모드 검증
     - S1~S7 최종 체크리스트 실행 및 결과 기록, PRD 10장 미결 사항 최종 상태 갱신
   - 수용 기준
