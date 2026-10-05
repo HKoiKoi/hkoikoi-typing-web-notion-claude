@@ -300,14 +300,16 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - L2 공통: `PassageErrorState`(kind → 문구/아이콘/복구 버튼 매핑, 기존 `EmptyState` 조합), `StatItem`(라벨 + 값 + 단위)
     - 더미 데이터 `src/lib/mock/passages.ts`: 창세기 1장 31줄, 애국가(`Label` `1절`/`후렴`), 영어 글, 각 분류/난이도/태그 조합 10건 이상
   - 수용 기준
-    - [ ] 판정 토큰 7종의 라이트/다크 대비 측정값이 이 Task의 `테스트 결과`에 기록되고 모두 4.5:1 이상
+    - [x] 판정 토큰 7종의 라이트/다크 대비 측정값이 이 Task의 `테스트 결과`에 기록되고 모두 4.5:1 이상
     - [ ] 새 L1 컴포넌트가 모두 shadcn CLI로 추가되었다
     - [ ] L2 컴포넌트가 L3/L4를 import하지 않는다
   - 테스트 체크리스트 (Playwright MCP)
-    - [ ] 정상: 임시 미리보기 화면에서 토큰 7종 렌더 → `browser_emulate_media`로 라이트/다크 전환 후 `browser_take_screenshot`
-    - [ ] 정상: `browser_evaluate`로 `getComputedStyle` 값을 읽어 대비비 계산 → 7종 모두 4.5:1 이상
-    - [ ] 공통: 콘솔 오류 0건
-  - 테스트 결과: (미수행)
+    - [x] 정상: 임시 미리보기 화면에서 토큰 7종 렌더 → `browser_emulate_media`로 라이트/다크 전환 후 `browser_take_screenshot`
+    - [x] 정상: `browser_evaluate`로 `getComputedStyle` 값을 읽어 대비비 계산 → 7종 모두 4.5:1 이상
+    - [x] 공통: 콘솔 오류 0건
+  - 테스트 결과: (2026-10-05) `tsc`/`lint` 통과. 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거, 프로덕션은 `notFound()`)에서 라이트/다크 스크린샷 확인. 대비비는 `getComputedStyle` 값(브라우저가 lab으로 반환)을 canvas로 sRGB 변환 후 WCAG 공식으로 계산, 전경 6종은 페이지 배경(라이트 #FFFFFF / 다크 #0A0A0A) 대비, `incorrect-space-bg`는 그 위 글자(`foreground`) 대비. 값은 라이트/다크 순이며 모두 4.5:1 이상, 콘솔 오류·경고 0건. 별도 보조 측정: `incorrect` 글자가 `incorrect-space-bg` 위에 놓이면 5.04 / 5.24. 토큰 값은 조정 없이 기존 `globals.css` 그대로 통과
+    - `correct` 5.62 / 9.50, `incorrect` 6.16 / 7.38, `incorrect-space-bg`(글자 대비) 16.20 / 13.47, `pending` 4.88 / 6.12, `current` 6.72 / 10.53, `composing` 5.77 / 11.20, `extra` 6.13 / 8.39
+    - 참고: 이 세션에서 Playwright MCP 도구를 쓸 수 없어 `playwright-core`(시스템 Chrome, `colorScheme` 에뮬레이션)로 같은 측정을 대체 수행. `incorrect-space-bg` 배경 자체는 페이지 배경 대비 1.22 / 1.41로 보조 표시(배경색)일 뿐이라 글자 대비로 판정
 
 - **Task 008: 예문 목록 페이지 UI 완성 (더미 데이터)**
   - 관련: F001, F002, F009(빈 DB/필터 0건)
