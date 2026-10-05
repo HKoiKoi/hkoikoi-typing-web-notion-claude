@@ -70,7 +70,7 @@
 
 **노션 오류 재현**: `.env`의 값을 바꾸고 dev 서버를 재기동한다(토큰 틀림, data source ID 틀림, 값 삭제). 테스트가 끝나면 반드시 원래 값으로 복구하고 정상 동작을 한 번 더 확인한다.
 
-**한글 IME 한계**: Playwright로 실제 IME 조합을 재현하기 어렵다. S2는 macOS 실기기 수동 시나리오(Chrome·Safari·Firefox)가 기준이다. `browser_evaluate`로 `compositionstart/update/end`와 `input` 이벤트를 디스패치하는 합성 시나리오는 로직 회귀 확인용 보조 수단이며 수동 결과를 대체하지 않는다.
+**한글 IME 한계**: Playwright로 실제 IME 조합을 재현하기 어렵다. S2는 macOS 실기기 수동 시나리오(Chrome)가 기준이다. `browser_evaluate`로 `compositionstart/update/end`와 `input` 이벤트를 디스패치하는 합성 시나리오는 로직 회귀 확인용 보조 수단이며 수동 결과를 대체하지 않는다.
 
 **증거**: 스크린샷은 Playwright MCP 기본 출력 경로에 저장하고 커밋하지 않는다. 결론과 수치만 Task의 `테스트 결과` 줄에 남긴다.
 
@@ -105,7 +105,8 @@
 - Task 010 산출물: `src/lib/typing/{normalize,judge,metrics,truncate}.ts` 구현(`normalizeLine`, `toCodePoints`, `judgeLine`, `isLineComplete`, `accumulateStats`, `computeMetrics`, `truncateToLine`, 스텁의 `eslint-disable` 제거), 개발 전용 `/dev/typing-lab`(`cases.ts` 45케이스, `_components/lab-results.tsx`, `page.tsx`, Task 018에서 제거). `typed` 0 정확도 기본값 100으로 확정
 - Task 011 산출물: `src/lib/notion/mappers.ts`(`toPassageSummary`, `mapPassageRows`), `passages.ts`의 `getPassageSummariesCached`(`stale 30`·`revalidate 300`·`expire 600`, 태그 `passages`), `src/lib/passages/load.ts`의 `loadPassageSummaries`(D11 확정, `loadPassage`는 Task 012 스텁 유지), 홈 연동 `src/app/_components/passage-list-section.tsx`(`connection()`으로 요청 시점 실행)·`passage-retry-button.tsx`(transient [다시 시도]). 스파이크 export(`getPassageRowsCached` 등)는 `/dev/notion-cache`가 쓰므로 유지(Task 018 제거)
 - Task 012 산출물: `src/lib/notion/lines-mapper.ts`(`toLine`, `mapLineRows`), `passage-lines.ts`의 `getPassageLinesCached`, `load.ts`의 `loadPassage`(`classifyByProbe` 일반화), `/passages/[id]`의 `PassageScreen` 연동(`nextHref`/`listHref`), `PassageRetryButton`을 `src/components/common/`으로 이동. 더미 `src/lib/mock/passages.ts`는 `/dev/typing-ui`가 쓰므로 유지(삭제는 Task 018). 타이핑 보드는 아직 정적 표시(입력 엔진은 Task 013)
-- 다음은 Task 013. Task 013 이후는 미착수
+- Task 013 산출물: `src/lib/typing/session.ts`(순수 `sessionReducer`, `createInitialSessionState`, 시간은 이벤트로 주입, `pending-enter.ts` 재사용), `src/hooks/use-typing-session.ts`(`useTypingSession`: `inputProps`, 붙여넣기·드롭·줄바꿈 차단, Esc 초기화, `mismatch`/`shakeKey`, `getElapsedMs`), 개발 전용 `/dev/typing-session`(reducer 케이스 23건과 훅 데모, Task 018 제거 대상). `TypingBoard`의 입력창은 아직 읽기 전용이라 Task 014에서 훅의 `inputProps`로 연결해야 한다
+- 다음은 Task 014. Task 014 이후는 미착수
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -221,32 +222,32 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 의존: 003 (라우트만 필요, 006과 병렬 가능)
   - 구현 사항
     - 개발 전용 로그 페이지(예: `src/app/dev/ime-log/page.tsx`, 프로덕션에서는 `notFound()`)에서 `keydown`(key, `isComposing`, `keyCode`), `compositionstart/update/end`, `beforeinput`, `input`, `onChange` 값을 타임스탬프와 함께 기록
-    - macOS 한글 IME로 Chrome·Safari·Firefox에서 "닭", "읽", "왜", "의", 빠른 연타, 음절 끝 Enter를 입력해 이벤트 순서표 작성(Safari는 `compositionend`가 Enter keydown보다 먼저, Chrome은 반대인지 확인)
-    - 결정(2026-10-05): 앱은 Chrome + macOS에서만 사용하므로 Safari·Firefox 실입력 검증은 범위에서 제외한다. 이벤트 순서표·pendingEnter 확인은 Chrome(macOS 한글 IME)만 대상으로 한다.
+    - macOS 한글 IME로 Chrome에서 "닭", "읽", "왜", "의", 빠른 연타, 음절 끝 Enter를 입력해 이벤트 순서표 작성(Chrome의 `compositionend`와 Enter keydown 순서 확인)
+    - 결정(2026-10-05): 앱은 Chrome + macOS에서만 사용하므로 실입력 검증은 Chrome만 대상으로 한다. 이벤트 순서표·pendingEnter 확인은 Chrome(macOS 한글 IME)만 대상으로 한다.
     - `pendingEnter` 프로토타입: 조합 중 Enter는 보류 → `compositionend` 직후 확정값으로 판정, 비조합 Enter는 즉시 판정. Chrome에서 Enter 한 번으로 동작하는지 확인(Chrome은 조합 확정 Enter 한 번에 keydown을 두 번 보내므로 두 번째 Enter 무시 규칙 `suppressEnter` 추가)
     - 조합 중 controlled input `value` 변경(잘라내기 등)의 영향과 음절별 `compositionstart/end` 발생 패턴 기록 → D10 결정(controlled 유지 + 조합 중 value 미변경 규칙 / uncontrolled + ref 읽기)
     - 붙여넣기 차단(`onPaste`, `beforeinput`의 `insertFromPaste`)과 `autocomplete/autocorrect/autocapitalize/spellcheck` 끄기 동작 확인
   - 수용 기준
-    - [x] Chrome(macOS) 이벤트 순서 요약이 이 Task의 `테스트 결과`와 PRD 10장에 기록되어 있다 (Safari·Firefox는 범위 제외, 위 결정)
+    - [x] Chrome(macOS) 이벤트 순서 요약이 이 Task의 `테스트 결과`와 PRD 10장에 기록되어 있다
     - [x] 프로토타입에서 Chrome 음절 끝 Enter 1회로 줄 전환되고 중복/누락 글자가 없다 (실입력으로 전환 1회·글자 중복/누락 없음 확인. 두 번째 Enter 불일치 오경고는 수정 후 CDP 재현으로만 확인, 실입력 재확인은 아래 선택 항목)
     - [x] D10이 결정 기록에 반영되어 Task 013 설계 입력으로 쓸 수 있다
   - 테스트 체크리스트
     - [x] 정상 (Playwright MCP): `browser_navigate` `/dev/ime-log` → `browser_evaluate`로 영어 `input` 이벤트 디스패치 → 로그에 `input`/`onChange` 값이 입력과 일치
     - [x] 정상 (합성): `browser_evaluate`로 `compositionstart → compositionupdate → compositionend → keydown(Enter)` 순서 디스패치 → pendingEnter 프로토타입이 줄 전환 1회
-    - [x] 오류/엣지 (합성): `keydown(Enter, isComposing=true, keyCode=229)` 후 `compositionend` → 보류되었다가 확정값 판정 후 전환 1회(중복 전환 없음). `compositionend`가 Enter보다 먼저 오는 순서(Safari형)도 동일 결과
+    - [x] 오류/엣지 (합성): `keydown(Enter, isComposing=true, keyCode=229)` 후 `compositionend` → 보류되었다가 확정값 판정 후 전환 1회(중복 전환 없음). `compositionend`가 Enter보다 먼저 오는 순서도 동일 결과
     - [x] 엣지 (Playwright MCP): `browser_press_key`로 Ctrl+V 붙여넣기 시도 → 입력 값 불변, `spellcheck/autocorrect` 속성 off 확인(`browser_evaluate`)
-    - [x] 수동(필수): macOS 한글 IME로 Chrome 실입력. 합성 이벤트는 실제 IME 순서를 대체하지 않는다 (Safari·Firefox는 범위 제외)
+    - [x] 수동(필수): macOS 한글 IME로 Chrome 실입력. 합성 이벤트는 실제 IME 순서를 대체하지 않는다
     - [ ] 수동(선택): `suppressEnter` 수정 후 macOS 한글 IME 실입력으로 "의" 조합 중 Enter 1회 → `전환 1 / 불일치 0` 재확인
   - 테스트 결과 (2026-10-05):
-    - Playwright MCP(Chromium, `npm run dev`) 합성 검증. controlled·uncontrolled 두 입력 모두 동일 결과: 영어 `input` 후 값 "abc"가 로그/onChange와 일치. Chrome형(조합 중 keydown Enter keyCode 229 -> compositionend)은 전환 카운터 +1, keydown preventDefault됨, 종료 후 pendingEnter=false, 입력 비워짐. Safari형(compositionend -> 비조합 Enter)도 +1. 표준 순서(start -> update -> end -> Enter)도 +1. 불일치 줄(조합 중 Enter 후 compositionend)은 전환 0회, pendingEnter 해제. 마지막 Enter 이후 advance 횟수 중복 없음
+    - Playwright MCP(Chromium, `npm run dev`) 합성 검증. controlled·uncontrolled 두 입력 모두 동일 결과: 영어 `input` 후 값 "abc"가 로그/onChange와 일치. Chrome형(조합 중 keydown Enter keyCode 229 -> compositionend)은 전환 카운터 +1, keydown preventDefault됨, 종료 후 pendingEnter=false, 입력 비워짐. `compositionend`가 먼저 오는 순서(compositionend -> 비조합 Enter)도 +1. 표준 순서(start -> update -> end -> Enter)도 +1. 불일치 줄(조합 중 Enter 후 compositionend)은 전환 0회, pendingEnter 해제. 마지막 Enter 이후 advance 횟수 중복 없음
     - 붙여넣기: 합성 paste 이벤트는 defaultPrevented=true, 실제 `ControlOrMeta+v` 후에도 두 입력 값 불변("닭이" 유지), 로그에 paste 행 기록. 두 입력 모두 `spellcheck=false`, `autocorrect/autocapitalize/autocomplete=off`. 콘솔 오류 0건
     - 빌드: `npm run build` 통과(에이전트 보고). 프로덕션에서 `/dev/ime-log`는 not-found UI가 렌더되고 lab은 노출되지 않지만 cacheComponents 정적 셸 때문에 HTTP 상태는 404가 아니라 200(soft 404). 진짜 404가 필요하면 `proxy.ts`에서 프로덕션 `/dev/*`를 차단하며, Task 018에서 재확인한다
     - macOS 한글 IME + Chrome 실입력 이벤트 순서(사용자 로그, controlled·uncontrolled 동일): 조합 중 keydown은 `isComposing=true, keyCode=229`. 단어 끝 스페이스는 조합을 확정하며 확정 데이터에 공백이 포함된다(`"읽 "`). 단어 안에서 받침이 붙을 수 없는 자음이 오면 그 keydown 안에서 `compositionend`(직전 음절) → `compositionstart`(새 음절)가 1ms 안에 연속 발생한다(예: `닭`+`ㅇ`). 따라서 `compositionstart/end`는 음절마다가 아니라 "단어 끝(스페이스)"과 "받침 불가 자음" 지점에서 발생한다. 조합 중 `input`의 `value`에는 조합 중인 글자가 마지막에 포함된다. 빠른 연타("닭이 읽은")에서도 이벤트 유실·중복 없이 값이 정확했다
     - **Chrome은 조합 확정 Enter 한 번에 keydown을 두 번 보낸다**: `keydown Enter(isComposing=true, 229)` → `compositionupdate/beforeinput/input` → `compositionend`(1~2ms) → `keydown Enter(isComposing=false, 13)`(1.5~2ms 뒤, 이때 입력창 `value`는 이미 비어 있음) → `beforeinput insertLineBreak`. 수정 전 pendingEnter로 실입력하면 첫 Enter가 `compositionend`에서 advance한 뒤 두 번째 Enter(13)가 빈 값을 불일치로 판정해 `전환 1 / 불일치 1(reject)`이 나왔다(controlled·uncontrolled 모두)
-    - 수정: `src/lib/typing/pending-enter.ts`에 `suppressEnter`와 `keyup-enter` 이벤트 추가. 보류된 Enter를 `compositionend`에서 판정하면 `suppressEnter`를 켜 다음 비조합 Enter 1개를 무시하고, `keyup`/`compositionstart`/조합 중 Enter에서 해제한다. lab은 무시된 Enter에서 "마지막 Enter 이후 advance 횟수"를 리셋하지 않는다. `tsx` 시나리오 재생 4종(Chrome형·Chrome(mac) 실측형·Safari형·영어) 모두 advance 1 / reject 0, `tsc`·`lint` 통과, lab의 시나리오 재생 버튼도 사용자가 4종 일치 확인
+    - 수정: `src/lib/typing/pending-enter.ts`에 `suppressEnter`와 `keyup-enter` 이벤트 추가. 보류된 Enter를 `compositionend`에서 판정하면 `suppressEnter`를 켜 다음 비조합 Enter 1개를 무시하고, `keyup`/`compositionstart`/조합 중 Enter에서 해제한다. lab은 무시된 Enter에서 "마지막 Enter 이후 advance 횟수"를 리셋하지 않는다. `tsx` 시나리오 재생 4종(Chrome형·Chrome(mac) 실측형·compositionend 선행형·영어) 모두 advance 1 / reject 0, `tsc`·`lint` 통과, lab의 시나리오 재생 버튼도 사용자가 4종 일치 확인
     - 수정 후 재현(Playwright MCP, CDP `Input.imeSetComposition`/`insertText`로 Chromium이 실제 `composition*` 이벤트를 내도록 하고 Enter(229) → 확정 → Enter(13) → keyup 순서를 재현): controlled·uncontrolled 각각 2회 연속 시도에서 `전환 1→2 / 마지막 Enter 이후 advance 1 / 불일치 0`, Enter 후 입력창 비워짐. 이 순서는 macOS IME가 아니라 위 실측 순서를 재현한 것이다
     - D10 근거(E 실험, controlled 조합 중 `value` 강제 변경 토글): "닭"·"읽" 입력 시 자모가 합쳐지지 않고 키마다 `isComposing=false`인 `compositionstart`가 새로 시작하며 `value`가 `""`로 되돌려져 음절이 만들어지지 않았다. 토글을 끈 controlled와 uncontrolled는 B·C·D에서 동일하게 정상 동작했다 -> D10 확정
-    - **미확인**: 수정 후 macOS 한글 IME 실입력 재확인(선택 항목), Safari·Firefox(범위 제외), 모바일 IME
+    - **미확인**: 수정 후 macOS 한글 IME 실입력 재확인(선택 항목), 모바일 IME
   - 비고: `/dev/ime-log`(`src/app/dev/`)와 `src/lib/typing/pending-enter.ts` 프로토타입이 구현되었다. Task 013 설계 입력: (1) 입력은 controlled 유지, 조합 중 `value` 변경 금지 (2) 줄 판정은 `compositionend` 시점의 `e.currentTarget.value` (3) `pending-enter.ts`(`stepPendingEnter`, `suppressEnter`, `keyup-enter`)를 그대로 재사용하고 Enter `onKeyUp`을 reducer에 연결 (4) 조합 중 Enter는 `preventDefault`. 스파이크 코드는 Task 013에서 재사용하거나 Task 018에서 제거
 
 - **Task 005: [스파이크] 노션 SDK 조회와 use cache 재검증 동작 검증** ✅
@@ -456,7 +457,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - [x] S4: 응답 본문에 토큰 0건, 공통: 콘솔 오류 0건
   - 테스트 결과: (2026-10-05, `next build && next start -p 3100`, 노션 실호출, 기준선 Passages 4행) `tsc`/`lint`/`build` 통과(`/passages/[id]`는 `◐` PPR, `.env` 존재 상태로 빌드). **정상**: 창세기 1장 31줄, 애국가 16줄(`1절`/`후렴` Badge 분리, 본문에 라벨 없음, Playwright `innerText`로 확인), The Road Not Taken 10줄. **재진입**: 같은 예문을 3회 요청해도 서버 로그의 `[notion] 줄 조회` 증가 없음(4건 최초 조회 후 고정). **오류**: `Empty Passage Sample` → '노션 Lines DB에 이 예문의 줄을 추가하세요'와 [예문 목록으로], 없는 ID(`zzz`, 한글 ID) → 본문에 `NEXT_HTTP_ERROR_FALLBACK;404`와 noindex(스트리밍이라 HTTP 상태는 200). 애국가 페이지 콘솔 오류 0건. **결정**: `cacheTag`에 `passage-<id>`와 `passages` 병행, `cacheLife` stale 30·expire 600 추가, `classifyByProbe(target)` 일반화(lines는 `linesDataSourceId`로 `dataSources.retrieve`), `safeDecode`와 `SearchParamsLike` 어댑터, `PassageScreen`에서 `connection()` 호출(오류 화면 박제 방지), `TypingScreen`의 `nextHref`/`listHref`는 `/dev/typing-ui`가 쓰므로 optional, 예문별 마지막 성공값 Map(`globalThis`)은 단일 프로세스에서만 보장. **깨진 % 인코딩**: `/passages/%E0%A4%A`는 `PassageScreen`에 도달하기 전에 Next 라우터가 평문 500을 반환해 `safeDecode`로는 막을 수 없었다. `src/proxy.ts`(matcher `/passages/:path*`)에서 디코드 실패 경로를 평문 404로 응답하도록 추가해 `%E0%A4%A`와 `%` 모두 404 확인(Task 018 정리 때 유지 여부 재검토). **추가 확인(노션 SDK 직접 조회 대조)**: 창세기 1장 31줄과 첫·마지막 줄 텍스트가 노션과 일치, HTML에서 토큰 0건(`/`, `/passages/[id]`)·`.next/static` 0건. **노션 데이터 조작 검증(사용자 조작, 2026-10-05)**: The Road Not Taken에서 8↔10 `Line Number`를 바꾸자 화면은 `Line Number` 순서 유지, 9번 `Label` 삭제 시 Badge 없이 표시, 7→6 중복 시 `duplicate-line-number` 경고(행 id만)와 응답 순서 유지, `test` 예문의 빈 `Text`(`empty-text`)·`Line Number` 없음(`missing-line-number`) 행은 줄에서 제외되고 로그에 행 id와 사유 코드만 기록(본문·라벨 없음), 유효한 줄이 0개가 되면 empty 안내. `Empty Passage Sample`에 유효한 줄 1개를 추가하면 그 예문만 1줄이고 다른 예문(31·16·10줄)에는 섞이지 않음. 모두 원복 확인. **페이지네이션**: 100줄 초과 예문이 없어 `page_size: 2` 임시 실험(창세기 31줄 전부 수집, 임시 코드 원복과 `git diff` 확인). **config**: 틀린 토큰으로 기동 시 '노션 연결 설정을 확인해 주세요' 안내(관찰: `@notionhq/client` 경고 로그가 응답 헤더 전체를 출력해 서버 로그에 쿠키 값이 남는다, 토큰은 아님). **미확인**: 네트워크 차단(Node `fetch`가 `HTTP(S)_PROXY`를 무시해 차단되지 않음)과 Lines DB 통합 연결 해제의 config/transient 복구(사용자가 연결 해제는 하지 않기로 함), 영어 글 텍스트 대조, 필터 쿼리 `nextHref`(Task 014 이후), 375px 레이아웃
 
-- **Task 013: IME 대응 타이핑 입력 엔진 훅 구현**
+- **Task 013: IME 대응 타이핑 입력 엔진 훅 구현** ✅
   - 관련: F003, F005, F012, F013, PRD 7.3/7.4/7.5/7.7, S2
   - 의존: 004(D10), 009, 010
   - 구현 사항
@@ -467,21 +468,21 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - 타이머: 첫 입력 시 `performance.now()` 시작, 마지막 줄 일치 Enter 시 종료 → `status = 'finished'`
     - 제어: Esc/[처음부터]로 전체 초기화, 화면 클릭 시 input 재포커스, 영어는 `onChange`마다 즉시 판정
   - 수용 기준
-    - [ ] macOS 한글 IME, Chrome·Safari·Firefox에서 겹받침/이중모음/빠른 연타 각 5줄 오판정 없이 통과(S2)
-    - [ ] 조합 중 Enter 1회로 줄 전환, 불일치 Enter는 이동 없이 경고
-    - [ ] 붙여넣기 불가, 초과 입력은 조합 확정 후 잘림, 글자 중복/누락 없음
+    - [x] macOS 한글 IME, Chrome에서 겹받침/이중모음/빠른 연타 각 5줄 오판정 없이 통과(S2)
+    - [x] 조합 중 Enter 1회로 줄 전환, 불일치 Enter는 이동 없이 경고
+    - [x] 붙여넣기 불가, 초과 입력은 조합 확정 후 잘림, 글자 중복/누락 없음
   - 테스트 체크리스트 (Playwright MCP + 수동)
-    - [ ] 정상 (영어): 영어 예문 `browser_type`으로 한 줄 입력 → 글자 상태가 correct로 진행, Enter → 다음 줄, 마지막 줄 Enter → `finished`
-    - [ ] 정상: 첫 입력 시 타이머 시작(경과 시간 증가), 줄 전환 시 입력 버퍼 비워짐
-    - [ ] 오류: 불일치 상태에서 Enter → 줄 이동 없음, "줄이 일치하지 않습니다" 표시. 일부만 입력하고 Enter → 이동 없음
-    - [ ] 오류: 틀린 글자 입력 → 틀림 표시 유지, 백스페이스로 수정 후 Enter → 이동
-    - [ ] 엣지: 줄 길이 초과 입력 → 잘림(조합 중 아닐 때), 붙여넣기(Ctrl+V, `browser_evaluate`로 paste 이벤트) → 차단, 첫 줄에서 백스페이스 연타 → 이전 줄로 못 돌아감
-    - [ ] 엣지: Esc → 입력·타이머·줄 위치 전체 초기화, 빠르게 연타 입력 시 글자 누락/중복 없음
-    - [ ] 합성(한글): `browser_evaluate`로 `compositionstart → input(조합 중) → compositionend` 디스패치 → 조합 중에는 오타 수/진행도 불변, 확정 후 갱신. 조합 중 Enter 후 `compositionend` → 전환 1회, `compositionend`가 먼저 오는 순서도 동일 결과
-    - [ ] 합성(엣지): 조합 중 초과 입력 → value 강제 변경 없이 "초과" 표시, `compositionend` 이후 잘림
-    - [ ] 수동(필수, S2): macOS 한글 IME로 겹받침(닭, 읽)·이중모음(왜, 의)·빠른 연타 각 5줄, Chrome·Safari·Firefox. 결과 표를 이 Task의 `테스트 결과`에 기록
-    - [ ] 공통: 콘솔 오류 0건
-  - 테스트 결과: (미수행)
+    - [x] 정상 (영어): 영어 예문 `browser_type`으로 한 줄 입력 → 글자 상태가 correct로 진행, Enter → 다음 줄, 마지막 줄 Enter → `finished`
+    - [x] 정상: 첫 입력 시 타이머 시작(경과 시간 증가), 줄 전환 시 입력 버퍼 비워짐
+    - [x] 오류: 불일치 상태에서 Enter → 줄 이동 없음, "줄이 일치하지 않습니다" 표시. 일부만 입력하고 Enter → 이동 없음
+    - [x] 오류: 틀린 글자 입력 → 틀림 표시 유지, 백스페이스로 수정 후 Enter → 이동
+    - [x] 엣지: 줄 길이 초과 입력 → 잘림(조합 중 아닐 때), 붙여넣기(Ctrl+V, `browser_evaluate`로 paste 이벤트) → 차단, 첫 줄에서 백스페이스 연타 → 이전 줄로 못 돌아감
+    - [x] 엣지: Esc → 입력·타이머·줄 위치 전체 초기화, 빠르게 연타 입력 시 글자 누락/중복 없음
+    - [x] 합성(한글): `browser_evaluate`로 `compositionstart → input(조합 중) → compositionend` 디스패치 → 조합 중에는 오타 수/진행도 불변, 확정 후 갱신. 조합 중 Enter 후 `compositionend` → 전환 1회, `compositionend`가 먼저 오는 순서도 동일 결과
+    - [x] 합성(엣지): 조합 중 초과 입력 → value 강제 변경 없이 "초과" 표시, `compositionend` 이후 잘림
+    - [x] 수동(필수, S2): macOS 한글 IME로 겹받침(닭, 읽)·이중모음(왜, 의)·빠른 연타 각 5줄, Chrome. 결과 표를 이 Task의 `테스트 결과`에 기록
+    - [x] 공통: 콘솔 오류 0건
+  - 테스트 결과: (2026-10-05, 개발 서버 `localhost:3000`, Playwright MCP) `tsc`/`lint`/`build` 통과(`/dev/typing-session` 정적 생성). `/dev/typing-session` reducer 케이스 `통과 23 / 전체 23`, 실패 0건, 콘솔 오류 0건. **영어(`pressSequentially`)**: `hello` 입력 시 `typed 5`, 타이머 시작과 경과 시간 증가 확인, `hello worlx` Enter → 줄 유지·`rejectSeq 1`·'줄이 일치하지 않습니다' 표시, 백스페이스+`d` 수정 후 표시 해제와 Enter 전환(buffer 비워짐), 초과 입력 `good dayXYZ` → `good day`로 잘림, `delay 0` 빠른 연타 `hello world` 11글자 누락·중복 없음(DOM value 일치), 첫 줄 백스페이스 6회 후 줄 유지, Esc → `idle`/0줄/0집계 초기화. **붙여넣기**: `paste` 이벤트와 `beforeinput(insertFromPaste)` 모두 `defaultPrevented`, 상태 불변. **한글 합성(`browser_evaluate` 이벤트 디스패치)**: 조합 중 `닭` → `typed` 19 유지·`composing true`, `compositionend` 후 20, 조합 중 Enter(`keyCode 229`) → `pendingEnter true`·전환 없음, `compositionend` 후 `finished` 1회(`committed 3`, `typed 26`), Chrome(mac)형 두 번째 Enter(`keyCode 13`) 무시(`rejectSeq 0`·상태 불변), `compositionend`가 먼저 오는 순서도 Enter 1회로 `finished`, 조합 중 초과 입력 `…왜가나`는 DOM value 강제 변경 없이 유지되다 `compositionend` 후 `…왜`로 잘리고 집계는 잘린 글자만(`typed 26`). **결정**: 줄 판정 상태를 순수 reducer(`src/lib/typing/session.ts`)로 분리해 시간은 이벤트 payload로 주입, `pending-enter.ts` 재사용, `mismatch` 플래그는 reducer가 관리(입력이 바뀌면 해제), 줄 전환 시 `pending`(`suppressEnter`)은 초기화하지 않음, `finished` 이후에는 `reset` 외 이벤트 무시, `TypingBoard`의 입력창은 읽기 전용이라 Task 014에서 훅의 `inputProps`로 교체 필요(데모는 별도 입력창 사용). **수동(S2, 사용자 조작, 2026-10-05)**: Chrome + macOS 한글 IME로 `/dev/typing-session`에서 겹받침(닭, 읽)·이중모음(왜, 의)·빠른 연타를 입력해 모두 통과(사용자 보고, 항목별 수치는 제공되지 않음). **미확인**: 모바일 IME, 프로덕션 `notFound()` 동작은 Task 018에서 재확인
 
 - **Task 014: 타이핑 화면 통합 — 실시간 판정, 자동 스크롤, 진행도, 결과/재도전**
   - 관련: F003, F004, F006, F007, F014, S3, S5, S7
@@ -514,7 +515,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 구현 사항
     - Playwright MCP 전체 사용자 플로우: 목록 → 필터 → 카드 → 전체 줄 입력 → 결과 → 다음 예문/다시 도전/목록으로
     - 오류 시나리오: 토큰 오류, 빈 DB(빈 data source 또는 전부 `Enabled` 해제), 네트워크 오류(노션 도메인 차단 또는 오프라인), 없는 예문 ID, 줄이 없는 예문, 필터 0건
-    - 한글 IME 수동 시나리오(S2) Chrome·Safari·Firefox 결과 표 작성
+    - 한글 IME 수동 시나리오(S2) Chrome 결과 표 작성
     - S1: 노션 행 추가/본문 수정 → 5분 경과 → 새로고침 2회로 반영 확인
     - S4: `npm run build` 후 `.next/`와 네트워크 응답에서 토큰 검색
   - 수용 기준
