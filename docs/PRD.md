@@ -218,7 +218,8 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 ### 7.3 줄 전환 (Enter)
 - 입력은 현재 줄 하나에 대한 버퍼 하나이며, 줄이 바뀌면 버퍼를 비운다.
 - **Enter 동작**: 입력이 줄 전체와 일치할 때만 다음 줄로 이동한다. 일치하지 않으면(부족하거나 틀림) 이동하지 않고 "줄이 일치하지 않습니다" 표시(짧은 강조 효과)로 알린다. 입력창에 줄바꿈 문자는 들어가지 않는다.
-- **조합 중 Enter는 보류**: 조합 중(`isComposing || keyCode === 229`)에 Enter가 오면 줄 전환을 바로 하지 않고 `pendingEnter = true`만 기록한다. `compositionend` 직후 확정된 값으로 줄 일치를 판정해, 일치하면 바로 전환하고 `pendingEnter`를 해제한다. 조합 중이 아닐 때의 Enter는 즉시 판정한다. Safari(WebKit)는 `compositionend`를 Enter keydown보다 먼저 보내고 Chrome은 순서가 다르므로, 이벤트 순서에 의존하지 않고 모든 브라우저에서 Enter 한 번으로 동작해야 한다.
+- **조합 중 Enter는 보류**: 조합 중(`isComposing || keyCode === 229`)에 Enter가 오면 줄 전환을 바로 하지 않고 `pendingEnter = true`만 기록한다. `compositionend` 직후 확정된 값으로 줄 일치를 판정해, 일치하면 바로 전환하고 `pendingEnter`를 해제한다. 조합 중이 아닐 때의 Enter는 즉시 판정한다. 이벤트 순서에 의존하지 않고 Enter 한 번으로 동작해야 한다. 지원·검증 대상 환경은 Chrome + macOS 한글 IME이다(Safari·Firefox는 검증하지 않음, 10장 12).
+- **Chrome(macOS) 실측**: 조합 확정 Enter 한 번에 keydown이 두 번 온다. `keydown Enter(isComposing=true, keyCode=229)` → `compositionend` → `keydown Enter(isComposing=false, keyCode=13)`. 두 번째 Enter는 첫 Enter가 이미 줄을 전환해 입력창이 비어 있는 상태에서 오므로, 그대로 즉시 판정하면 불일치로 오판한다. 따라서 보류된 Enter를 `compositionend`에서 판정한 직후의 비조합 Enter 1개는 무시하고(`suppressEnter`), Enter keyup·새 조합 시작·조합 중 Enter에서 무시 상태를 해제한다.
 - **종료**: 마지막 줄에서 일치 상태로 Enter를 누르면 종료하고 결과 뷰로 이동한다.
 - **자동 스크롤**: 줄 전환 시 새 현재 줄이 본문 영역 안(가능하면 세로 중앙 부근)에 오도록 스크롤한다. 사용자의 `prefers-reduced-motion` 설정이 있으면 부드러운 스크롤을 끈다.
 - 이전 줄로 돌아가기는 지원하지 않는다. 완료한 줄은 수정할 수 없다.
@@ -231,6 +232,8 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 - 영어 입력에는 조합이 없으므로 `onChange`마다 즉시 판정.
 - 마지막 글자가 조합 중일 때 Enter는 즉시 줄 완료로 처리되지 않고 보류되었다가 조합 확정 후 판정된다(7.3).
 - 입력 요소는 `autocomplete/autocorrect/autocapitalize/spellcheck`를 꺼 브라우저 보정을 막는다.
+- **조합 중 `value` 미변경(D10)**: 입력은 controlled를 유지하되 조합 중에는 `onChange`의 값을 그대로 상태에 반영하고 변형하지 않는다. 조합 중 `value`를 바꾸면 자모가 합쳐지지 않고 키마다 새 조합이 시작되어 음절이 만들어지지 않는다(Chrome·macOS 실측). 줄 일치 판정에는 `compositionend` 시점의 입력값을 쓴다.
+- **조합 경계(Chrome·macOS 실측)**: `compositionstart/end`는 음절마다 오지 않는다. 단어 끝 스페이스는 조합을 확정하며 확정 데이터에 공백이 포함된다(`"읽 "`). 단어 안에서는 받침이 붙을 수 없는 자음이 올 때(`닭`+`ㅇ`) `compositionend`와 `compositionstart`가 1ms 안에 연달아 발생한다.
 
 ### 7.5 입력 길이와 붙여넣기
 붙여넣기는 차단한다. 입력이 현재 줄 길이를 넘으면 초과분을 잘라내되, 조합 중에는 input의 value를 강제로 바꾸지 않고(IME 조합이 끊기거나 글자가 중복될 수 있음) `compositionend` 이후에 적용한다. 조합 중에 넘친 글자는 "초과" 상태로 표시만 한다.
@@ -270,7 +273,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 ### 리스크
 | 리스크 | 대응 |
 |--------|------|
-| 브라우저/IME별 composition 이벤트 순서 차이(특히 Safari, 모바일). 조합 확정 Enter와 줄 전환 Enter 구분이 어려움 | 이벤트 순서에 의존하지 않고 조합 중 Enter를 `pendingEnter`로 보류했다가 `compositionend` 직후 판정(7.3). 구현 초기에 Chrome·Safari·Firefox의 이벤트 순서 로그 페이지로 확인하고 macOS 한글 IME 수동 테스트 |
+| 브라우저/IME별 composition 이벤트 순서 차이(특히 Safari, 모바일). 조합 확정 Enter와 줄 전환 Enter 구분이 어려움 | 이벤트 순서에 의존하지 않고 조합 중 Enter를 `pendingEnter`로 보류했다가 `compositionend` 직후 판정하고, Chrome이 보내는 두 번째 Enter(keyCode 13)는 무시(7.3). 이벤트 순서 로그 페이지로 Chrome·macOS 한글 IME 실측 완료(Task 004). Safari·Firefox·모바일은 검증 범위 밖 |
 | 조합 중 value 강제 변경·음절별 `compositionend` 가정으로 입력 누락/중복 | 잘라내기는 `compositionend` 이후에만(7.5), 오타 집계는 확정 문자열 차이로만 계산(7.6) |
 | Lines DB 입력 실수(`Passage` 관계·`Line Number` 누락, 번호 중복, 다른 예문 연결) | 누락 행은 건너뛰고 로그, 중복은 경고 로그. 입력 규칙과 CSV import 방법을 설정 가이드에 명시. 두 DB 모두 통합 연결 필요(미연결 시 `config` 안내) |
 | 장 하나를 읽는 본문 조회가 노션 API 호출 수와 지연을 늘림 | 예문별 캐시(`passage-{id}`), 목록은 프로퍼티만 조회 |
@@ -282,7 +285,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 
 ## 10. 미결 사항
 
-1. 구현 중 검증 필요(문서로 확인하지 못함): (a) 백그라운드 재검증이 실패해도 기존 `use cache` 항목이 유지되는지(토큰을 일부러 틀리게 하고 5분 뒤 새로고침해 확인), (b) 조합 중 controlled input value 변경의 영향(macOS 한글 IME, Chrome·Safari), (c) 한글 IME의 음절별 `compositionstart/end` 발생 패턴(OS·브라우저별 이벤트 로그), (d) `filter_properties`가 프로퍼티 이름과 ID 중 무엇을 받는지, Lines data source의 `Passage` 관계 `contains` 필터와 `Line Number` 정렬 쿼리 동작.
+1. 구현 중 검증 필요(문서로 확인하지 못함): (a) 백그라운드 재검증이 실패해도 기존 `use cache` 항목이 유지되는지(토큰을 일부러 틀리게 하고 5분 뒤 새로고침해 확인), (b) 조합 중 controlled input value 변경의 영향(macOS 한글 IME, Chrome·Safari) **(결정: 조합 중 value를 바꾸면 조합이 깨지므로 controlled 유지 + 조합 중 value 미변경, Chrome·macOS 실측, Task 004, D10)**, (c) 한글 IME의 음절별 `compositionstart/end` 발생 패턴(OS·브라우저별 이벤트 로그) **(결정: 음절마다가 아니라 단어 끝 스페이스와 받침 불가 자음 지점에서 발생, Chrome은 조합 확정 Enter에 keydown 2회, 7.3·7.4 반영, Task 004)**, (d) `filter_properties`가 프로퍼티 이름과 ID 중 무엇을 받는지, Lines data source의 `Passage` 관계 `contains` 필터와 `Line Number` 정렬 쿼리 동작.
 2. `@notionhq/client` 설치 시 호환 버전 확정(API 버전은 6장 참고). **(결정: 5.27.0 정확 고정, SDK 기본 API 버전 2025-09-03 확인, Task 002)**
 3. 한글 타수를 음절 기준(현재안)으로 둘지, 자모 키 입력 수 기준으로 바꿀지. **(결정: 음절 기준, Task 002)**
 4. 결과 뷰를 별도 라우트로 둘지(현재안: 타이핑 화면 내 상태). 새로고침 시 결과 유지 여부. **(결정: 타이핑 화면 내 상태, 새로고침 시 결과 미유지, Task 002)**
@@ -293,3 +296,4 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 9. 줄 최대 길이 제한 필요 여부(한 줄이 매우 길면 입력 줄이 줄바꿈되어 가독성이 떨어짐). 애국가처럼 한 덩어리로 붙은 본문은 사용자가 Lines DB에 줄 단위 행으로 나눠 적는 것을 전제로 함(자동 분할 없음). **(결정: 길이 제한 없음, Task 002)**
 10. 연 구분용 빈 줄은 Lines DB에 행을 만들지 않으며, `Text`가 빈 행은 건너뜀. 빈 줄에서도 Enter를 치게 하고 싶은지. **(결정: 건너뜀, Task 002)**
 11. 노션 DB 구조: 단일 DB + 페이지 본문 블록(초안) vs DB 두 개(Passages + Lines). **(결정: DB 두 개, 속성명·옵션 값 영어, 환경 변수 `NOTION_LINES_DATA_SOURCE_ID` 추가, 2026-10-05)**
+12. IME 검증 대상 환경. **(결정: Chrome + macOS 한글 IME만 검증하며 Safari·Firefox는 범위 제외, 2026-10-05, Task 004)**
