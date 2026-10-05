@@ -193,10 +193,12 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
   - 5분 재검증은 `cacheLife({ revalidate: 300 })`으로 표현한다(`stale`, `revalidate`, `expire` 직접 지정 가능. 내장 `minutes` 프로파일은 revalidate 1분이라 맞지 않음).
   - 태그: 목록은 `passages`, 줄은 `passage-{id}`. 수동 갱신은 `revalidateTag(tag, 'max')`(문서의 권장 형태, 두 번째 인자 필수)로 하고, 서버 액션에서 즉시 반영이 필요하면 `updateTag`를 쓴다. "새로고침" 버튼은 선택.
   - 줄은 예문별로 한 번 조회 후 캐시하며, 같은 예문을 다시 열어도 노션을 다시 호출하지 않는다.
-  - `cacheComponents: true`에서는 `params`/`searchParams`가 런타임 API이므로 `/passages/[id]` 본문은 `<Suspense>` 안에서 렌더하고 `loading.tsx`를 둔다. 목록 페이지는 빌드 시 프리렌더되어 `next build` 중 노션을 호출하므로, 빌드 환경에도 토큰과 data source ID 두 개를 설정해야 한다.
+  - **스파이크 결과(Task 005, 프로덕션 실측)**: `cacheLife({ stale: 30, revalidate: 30, expire: 600 })` 조합을 썼다. `stale`이 30초 미만이거나 `expire`가 5분 미만이면 프리렌더에서 제외되므로 두 값을 이 하한 이상으로 둔다. 재검증 주기가 지난 뒤 첫 요청이 stale 값을 주지 않고 재조회 결과를 기다려 응답했다(1회 측정). 재검증이 실패하면 이전 데이터를 유지하지 않고 오류가 나며, 오류는 캐시되지 않아 복구 즉시 성공한다. **Task 011 권고**: (1) 사용자에게 이전 데이터를 보여주려면 캐시 밖 래퍼에서 마지막 성공값을 폴백으로 둔다(단일 프로세스에서만 보장) (2) 아래 오류 분류 주의 참고.
+  - `cacheComponents: true`에서는 `params`/`searchParams`가 런타임 API이므로 `/passages/[id]` 본문은 `<Suspense>` 안에서 렌더하고 `loading.tsx`를 둔다. 목록 페이지가 빌드 시 프리렌더되면 `next build` 중 노션을 호출하므로 빌드 환경에도 토큰과 data source ID 두 개가 필요하다. 단 Task 005의 검증 페이지는 `connection()`으로 동적이어서 빌드 중 노션 호출 0건이고 `.env` 없이도 빌드됐다. 실제 목록 페이지의 프리렌더 여부는 Task 011에서 다시 확인한다.
 - **오류 처리**: `isNotionClientError`와 `APIErrorCode`로 분기. 프로덕션에서는 서버 컴포넌트에서 던진 오류 메시지가 가려지므로 `error.message`로 분기하지 않는다.
   - 조회 함수는 `PassageResult<T>`(5장)를 반환하고, 페이지(서버 컴포넌트)가 `kind`에 따라 `EmptyState`를 렌더한다. `error.tsx`는 예상 밖 오류용 최후 방어선으로만 둔다.
   - `use cache` 함수는 성공 데이터만 반환하고 실패하면 throw한다(오류 결과가 5분간 캐시되는 것을 방지). try/catch로 `PassageResult`로 분류하는 일은 캐시 밖의 래퍼에서 한다.
+  - **주의(Task 005 실측)**: 프로덕션에서 `use cache` 경계를 지난 오류는 `APIResponseError`가 아니라 `digest`만 가진 일반 `Error`로 바뀌어 `isNotionClientError`와 `APIErrorCode`로 분류할 수 없다. 따라서 위 "캐시 밖 래퍼에서 분류" 방식은 그대로는 동작하지 않으며, Task 011에서 캐시 함수 안에서 분류하는 방식(실패 결과가 캐시되지 않게 하는 방법 포함)을 먼저 실측한 뒤 확정한다.
   - `unauthorized`/`restricted_resource`/`object_not_found` → `config`(토큰, 두 DB의 통합 연결, ID 확인 안내)
   - `rate_limited`, 5xx 계열, 타임아웃 → `transient` + 재시도. SDK가 `rate_limited`/500/503/529를 기본 2회 자동 재시도한다. 캐시된 이전 데이터가 있으면 표시한다(재검증 실패 시 기존 캐시 항목이 유지되는지는 구현 중 검증, 10장)
   - 환경 변수 누락(Lines data source ID 포함) → `config`
@@ -285,7 +287,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 
 ## 10. 미결 사항
 
-1. 구현 중 검증 필요(문서로 확인하지 못함): (a) 백그라운드 재검증이 실패해도 기존 `use cache` 항목이 유지되는지(토큰을 일부러 틀리게 하고 5분 뒤 새로고침해 확인), (b) 조합 중 controlled input value 변경의 영향(macOS 한글 IME, Chrome·Safari) **(결정: 조합 중 value를 바꾸면 조합이 깨지므로 controlled 유지 + 조합 중 value 미변경, Chrome·macOS 실측, Task 004, D10)**, (c) 한글 IME의 음절별 `compositionstart/end` 발생 패턴(OS·브라우저별 이벤트 로그) **(결정: 음절마다가 아니라 단어 끝 스페이스와 받침 불가 자음 지점에서 발생, Chrome은 조합 확정 Enter에 keydown 2회, 7.3·7.4 반영, Task 004)**, (d) `filter_properties`가 프로퍼티 이름과 ID 중 무엇을 받는지, Lines data source의 `Passage` 관계 `contains` 필터와 `Line Number` 정렬 쿼리 동작.
+1. 구현 중 검증 필요(문서로 확인하지 못함): (a) 백그라운드 재검증이 실패해도 기존 `use cache` 항목이 유지되는지(토큰을 일부러 틀리게 하고 5분 뒤 새로고침해 확인) **(결정: 유지되지 않음. 프로덕션 실측에서 재검증 실패 시 오류가 나고 오류는 캐시되지 않으며 복구는 즉시. 대응책은 6장, Task 005, D11)**, (b) 조합 중 controlled input value 변경의 영향(macOS 한글 IME, Chrome·Safari) **(결정: 조합 중 value를 바꾸면 조합이 깨지므로 controlled 유지 + 조합 중 value 미변경, Chrome·macOS 실측, Task 004, D10)**, (c) 한글 IME의 음절별 `compositionstart/end` 발생 패턴(OS·브라우저별 이벤트 로그) **(결정: 음절마다가 아니라 단어 끝 스페이스와 받침 불가 자음 지점에서 발생, Chrome은 조합 확정 Enter에 keydown 2회, 7.3·7.4 반영, Task 004)**, (d) `filter_properties`가 프로퍼티 이름과 ID 중 무엇을 받는지, Lines data source의 `Passage` 관계 `contains` 필터와 `Line Number` 정렬 쿼리 동작 **(결정: 이름과 ID 모두 허용, 관계 필터와 정렬 정상, `page_size`를 줄여도 전부 수집, Task 005)**.
 2. `@notionhq/client` 설치 시 호환 버전 확정(API 버전은 6장 참고). **(결정: 5.27.0 정확 고정, SDK 기본 API 버전 2025-09-03 확인, Task 002)**
 3. 한글 타수를 음절 기준(현재안)으로 둘지, 자모 키 입력 수 기준으로 바꿀지. **(결정: 음절 기준, Task 002)**
 4. 결과 뷰를 별도 라우트로 둘지(현재안: 타이핑 화면 내 상태). 새로고침 시 결과 유지 여부. **(결정: 타이핑 화면 내 상태, 새로고침 시 결과 미유지, Task 002)**
