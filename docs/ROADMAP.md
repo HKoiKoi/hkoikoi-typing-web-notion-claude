@@ -188,17 +188,23 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - `/passages/[id]/page.tsx`(params는 런타임 API이므로 본문을 `<Suspense>` 안에 렌더), `/passages/[id]/loading.tsx`, `/passages/[id]/not-found.tsx` 빈 껍데기 생성
     - `/` 페이지를 서버 컴포넌트 골격 + 클라이언트 필터 영역 자리로 분리(필터 영역은 `useSearchParams` 사용 예정이므로 `<Suspense>` 경계 준비)
     - `siteConfig.nav`를 `[{ title: "예문 목록", href: "/" }]`로 수정, `name` 한국어 표기 여부 결정 반영
+    - 결정(2026-10-05): `siteConfig.name`은 한국어로 바꾸지 않고 현재 값 "HKoiKoi Typing Practice"를 유지한다.
     - 디렉터리 생성: `src/types/`, `src/lib/notion/`, `src/lib/typing/`, `src/lib/passages/`, `src/hooks/`, `src/app/_components/`, `src/app/passages/[id]/_components/`
   - 수용 기준
-    - [ ] `npm run build`가 "URL data outside Suspense" 류 경고/오류 없이 통과한다
-    - [ ] `/`, `/passages/아무값`이 각각 자리표시자를 렌더하고 헤더 내비가 "예문 목록"을 가리킨다
-    - [ ] `npx tsc --noEmit`, `npm run lint` 통과
+    - [x] `npm run build`가 "URL data outside Suspense" 류 경고/오류 없이 통과한다
+    - [x] `/`, `/passages/아무값`이 각각 자리표시자를 렌더하고 헤더 내비가 "예문 목록"을 가리킨다
+    - [x] `npx tsc --noEmit`, `npm run lint` 통과
   - 테스트 체크리스트 (Playwright MCP)
-    - [ ] 정상: `browser_navigate` `/` → `browser_snapshot`에 헤더 내비 "예문 목록"과 자리표시자 존재
-    - [ ] 정상: `/passages/아무값` → 자리표시자(또는 not-found) 렌더, 레이아웃 깨짐 없음
-    - [ ] 공통: `browser_console_messages` 오류 0건
-    - [ ] 엣지: 로고/내비 클릭 → `/`로 복귀
-  - 테스트 결과: (미수행)
+    - [x] 정상: `browser_navigate` `/` → `browser_snapshot`에 헤더 내비 "예문 목록"과 자리표시자 존재
+    - [x] 정상: `/passages/아무값` → 자리표시자(또는 not-found) 렌더, 레이아웃 깨짐 없음
+    - [x] 공통: `browser_console_messages` 오류 0건
+    - [x] 엣지: 로고/내비 클릭 → `/`로 복귀
+  - 테스트 결과 (2026-10-05):
+    - `npx tsc --noEmit`, `npm run lint` 통과(출력 없음). `npm run build` 통과, `/` 정적, `/passages/[id]` 부분 프리렌더(◐)
+    - 빌드 중 발견·해결: (1) SiteFooter의 `new Date()`가 cacheComponents 프리렌더 오류 -> `"use cache"` + `cacheLife("days")` 컴포넌트(`CurrentYear`)로 분리, (2) 동적 라우트에서 MainNav `usePathname` 오류(CLIENT_HOOK_DYNAMIC) -> SiteHeader에서 `<Suspense fallback={null}>`로 감쌈
+    - curl 대체 검증: `/`·`/passages/abc`·`/passages/한글` 모두 HTTP 200, 자리표시자 문구와 내비 "예문 목록", 로고/내비 `href="/"` 링크 확인
+    - Playwright MCP 검증(2026-10-05, `npm run start` 프로덕션 모드): `/`와 `/passages/abc`, `/passages/한글` 스냅샷에서 헤더 내비 "예문 목록"과 자리표시자 렌더 확인. 세 페이지 모두 콘솔 오류·경고 0건. 로고 클릭(`/passages/abc` → `/`), 내비 "예문 목록" 클릭(`/passages/한글` → `/`) 복귀 확인. 모바일(390x844)에서 "메뉴 열기" 시트에 "모바일 내비게이션"과 "예문 목록" 링크 확인
+    - 미확인: 스크린샷 기반 시각 확인(레이아웃 깨짐은 접근성 스냅샷 구조로만 판단), 다크 모드, `/passages/[id]`의 loading·not-found 화면(`notFound()` 호출 지점이 없음)
 
 - **Task 004: [스파이크] 한글 IME composition 이벤트 순서와 pendingEnter 검증**
   - 관련: F005, F013, PRD 7.3/7.4/7.5, 리스크 1·2, 10장 1(b)(c)
