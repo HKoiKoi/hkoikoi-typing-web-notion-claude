@@ -34,7 +34,10 @@ import {
   getNotionClient,
   NotionConfigError,
 } from "@/lib/notion/client";
-import { getPassageLinesCached } from "@/lib/notion/passage-lines";
+import {
+  getPassageLinesCached,
+  probePassageLinesQuery,
+} from "@/lib/notion/passage-lines";
 import { getPassageSummariesCached } from "@/lib/notion/passages";
 import type {
   Line,
@@ -67,6 +70,10 @@ function classifyError(error: unknown): PassageErrorKind {
     case APIErrorCode.Unauthorized:
     case APIErrorCode.RestrictedResource:
     case APIErrorCode.ObjectNotFound:
+    // 프로퍼티 이름·타입이 어긋난 스키마 불일치는 재시도로 복구되지 않는다.
+    case APIErrorCode.ValidationError:
+    case APIErrorCode.InvalidRequest:
+    case APIErrorCode.InvalidRequestURL:
       return "config";
     case APIErrorCode.RateLimited:
     case APIErrorCode.InternalServerError:
@@ -80,11 +87,13 @@ function classifyError(error: unknown): PassageErrorKind {
 /**
  * 프로덕션 `use cache` 경계를 지난 오류는 digest만 가진 일반 Error라 분류할 수 없다.
  * 그래서 실패 후 캐시 밖에서 data source 조회를 1회 시도해 code로 분류한다.
- * 사전 점검이 성공하면 원인은 일시 오류로 본다.
- * target: 'passages'는 예문 DB, 'lines'는 줄 DB를 점검한다.
+ * 줄 점검(lines)은 data source 조회 뒤에 실제 줄 쿼리(1건)도 시도해 스키마 불일치(validation_error 등)를 잡는다.
+ * 사전 점검이 모두 성공하면 원인은 일시 오류로 본다.
+ * target: 'passages'는 예문 DB, 'lines'는 줄 DB를 점검한다(lines는 passageId 필요).
  */
 async function classifyByProbe(
   target: "passages" | "lines" = "passages",
+  passageId?: string,
 ): Promise<PassageErrorKind> {
   const label = target === "passages" ? "목록" : "줄";
   try {
@@ -93,6 +102,7 @@ async function classifyByProbe(
       data_source_id:
         target === "passages" ? passagesDataSourceId : linesDataSourceId,
     });
+    if (target === "lines" && passageId) await probePassageLinesQuery(passageId);
     return "transient";
   } catch (error) {
     if (error instanceof NotionConfigError) return "config";
@@ -102,6 +112,13 @@ async function classifyByProbe(
     );
     return kind;
   }
+}
+
+/** 캐시 조회 실패 원인을 남긴다. 프로덕션 캐시 경계를 지난 오류는 code가 없어 unknown으로 찍힌다. */
+function logLoadFailure(label: string, error: unknown): void {
+  console.warn(
+    `[passages] ${label} 조회 실패: ${isNotionClientError(error) ? error.code : "unknown"}`,
+  );
 }
 
 /**
@@ -127,7 +144,8 @@ export async function loadPassageSummaries(): Promise<
     if (list.length === 0) return { ok: false, kind: "empty" };
     setLastGood(list);
     return { ok: true, data: list };
-  } catch {
+  } catch (error) {
+    logLoadFailure("목록", error);
     const lastGood = getLastGood();
     if (lastGood) return { ok: true, data: lastGood };
     return { ok: false, kind: await classifyByProbe("passages") };
@@ -183,9 +201,12 @@ export async function loadPassage(id: string): Promise<PassageResult<Passage>> {
   try {
     lines = await getPassageLinesCached(summary.id);
     getLinesLastGoodMap().set(summary.id, lines);
-  } catch {
+  } catch (error) {
+    logLoadFailure("줄", error);
     const lastGood = getLinesLastGoodMap().get(summary.id);
-    if (!lastGood) return { ok: false, kind: await classifyByProbe("lines") };
+    if (!lastGood) {
+      return { ok: false, kind: await classifyByProbe("lines", summary.id) };
+    }
     lines = lastGood;
   }
 

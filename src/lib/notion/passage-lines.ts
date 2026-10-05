@@ -32,10 +32,28 @@ export async function getPassageLinesCached(
   const { linesDataSourceId } = getDataSourceIds();
   const notion = getNotionClient();
   const results = await collectPaginatedAPI(notion.dataSources.query, {
-    data_source_id: linesDataSourceId,
-    filter: { property: "Passage", relation: { contains: passageId } },
-    sorts: [{ property: "Line Number", direction: "ascending" }],
-    filter_properties: LINE_PROPERTY_NAMES,
+    ...buildLinesQuery(linesDataSourceId, passageId),
   });
   return mapLineRows(results.filter(isFullPage));
+}
+
+function buildLinesQuery(linesDataSourceId: string, passageId: string) {
+  return {
+    data_source_id: linesDataSourceId,
+    filter: { property: "Passage", relation: { contains: passageId } },
+    sorts: [{ property: "Line Number", direction: "ascending" as const }],
+    filter_properties: LINE_PROPERTY_NAMES,
+  };
+}
+
+/**
+ * 줄 DB 스키마 점검용 캐시 없는 조회(1건). 프로퍼티 이름·타입이 어긋나면 노션이 validation_error 등으로
+ * 거부하므로, 호출측(load.ts)이 error.code로 config/transient를 가를 수 있다. 실패는 throw한다.
+ */
+export async function probePassageLinesQuery(passageId: string): Promise<void> {
+  const { linesDataSourceId } = getDataSourceIds();
+  await getNotionClient().dataSources.query({
+    ...buildLinesQuery(linesDataSourceId, passageId),
+    page_size: 1,
+  });
 }
