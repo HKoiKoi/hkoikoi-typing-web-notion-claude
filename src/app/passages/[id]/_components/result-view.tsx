@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 
 import { StatItem } from "@/components/common/stat-item";
 import { Button } from "@/components/ui/button";
@@ -17,20 +20,36 @@ export function ResultView({
   nextHref,
   listHref,
   onRetry,
+  focusHeading = false,
 }: {
   result: TypingResult;
   nextHref: string;
   listHref: string;
   /** [다시 도전] 클릭 시 호출. 입력·타이머·줄 위치 초기화는 호출측이 한다. */
   onRetry?: () => void;
+  /**
+   * true면 마운트 시 결과 헤딩으로 포커스를 옮긴다. 입력창이 사라지며 포커스가 body로 가는 것을 막고
+   * 스크린리더가 결과 화면 전환을 읽게 한다(새로 삽입된 aria-live 노드는 읽히지 않는다).
+   */
+  focusHeading?: boolean;
 }) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (focusHeading) headingRef.current?.focus();
+  }, [focusHeading]);
+
   return (
     <section
-      aria-live="polite"
       aria-labelledby="result-heading"
       className="flex flex-col gap-6 rounded-lg border p-6"
     >
-      <h2 id="result-heading" className="text-xl font-semibold">
+      <h2
+        ref={headingRef}
+        id="result-heading"
+        tabIndex={-1}
+        className="text-xl font-semibold outline-none"
+      >
         연습 결과
       </h2>
       <dl className="grid grid-cols-2 gap-6 sm:grid-cols-3">

@@ -65,6 +65,7 @@ export function TypingScreen({
         result={result}
         nextHref={nextHref}
         listHref={listHref}
+        focusHeading
         onRetry={() => {
           focusAfterResetRef.current = true;
           session.reset();
