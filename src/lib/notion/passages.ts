@@ -4,10 +4,15 @@ import { collectPaginatedAPI, isFullPage } from "@notionhq/client";
 import type { PageObjectResponse } from "@notionhq/client";
 import { cacheLife, cacheTag } from "next/cache";
 
+import type { PassageSummary } from "@/types/passage";
+
 import { getDataSourceIds, getNotionClient } from "./client";
 import { countCall } from "./dev-probe";
+import { mapPassageRows } from "./mappers";
 
-// 스파이크용 최소 직렬화(Task 005). 정식 mappers/PassageResult는 Task 011에서 만든다.
+// 정식 경로: getPassageSummariesCached (dev-probe 비의존).
+// 아래 PassageRowProbe/getPassageRowsCached/queryPassageRowsUncached 및 스파이크 헬퍼는
+// /dev/notion-cache, probe/route.ts가 참조하는 Task 005 스파이크 코드다. (Task 018 제거)
 
 export type PassageRowProbe = {
   id: string;
@@ -76,7 +81,28 @@ function toPassageRowProbe(page: PageObjectResponse): PassageRowProbe {
 }
 
 /**
- * 예문 목록 캐시 조회. 서버 필터 없이 전체를 수집한다(PRD 6장).
+ * 예문 목록(PassageSummary[]) 캐시 조회. 서버 필터 없이 전체를 수집한 뒤 매핑한다.
+ * 반환은 직렬화 가능한 plain 객체뿐이며 SDK 객체/토큰은 포함하지 않는다.
+ * 실패는 catch하지 않고 throw한다(오류 결과를 반환하면 캐시되기 때문).
+ */
+export async function getPassageSummariesCached(): Promise<PassageSummary[]> {
+  "use cache";
+  // revalidate 300초(5분)를 쓰되, 프리렌더 제외 하한(stale>=30초, expire>=5분=300초)을
+  // 지키기 위해 stale 30, expire 600으로 둔다.
+  cacheLife({ stale: 30, revalidate: 300, expire: 600 });
+  cacheTag("passages");
+
+  const { passagesDataSourceId } = getDataSourceIds();
+  const notion = getNotionClient();
+  const results = await collectPaginatedAPI(notion.dataSources.query, {
+    data_source_id: passagesDataSourceId,
+    filter_properties: PASSAGE_PROPERTY_NAMES,
+  });
+  return mapPassageRows(results.filter(isFullPage));
+}
+
+/**
+ * (Task 018 제거) 스파이크용 예문 목록 캐시 조회. 서버 필터 없이 전체를 수집한다(PRD 6장).
  * cacheLife: stale<30초 또는 expire<5분이면 프리렌더에서 제외되므로 이 값을 유지한다.
  * 실패는 그대로 throw한다(오류 결과를 반환하면 캐시되기 때문).
  */
@@ -104,7 +130,7 @@ export async function getPassageRowsCached(): Promise<{
 }
 
 /**
- * 검증용 비캐시 조회. page_size를 줄여 100건 초과 수집을 검증하거나,
+ * (Task 018 제거) 검증용 비캐시 조회. page_size를 줄여 100건 초과 수집을 검증하거나,
  * filterProperties에 이름/ID 배열을 넣어 비교할 수 있다.
  */
 export async function queryPassageRowsUncached(options: {

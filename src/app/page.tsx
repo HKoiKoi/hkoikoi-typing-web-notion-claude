@@ -2,9 +2,8 @@ import { Suspense } from "react";
 
 import { Container } from "@/components/common/container";
 import { PageHeader } from "@/components/common/page-header";
-import { getMockPassageSummaries } from "@/lib/mock/passages";
 
-import { PassageBrowser } from "./_components/passage-browser";
+import { PassageListSection } from "./_components/passage-list-section";
 import { PassageListSkeleton } from "./_components/passage-list-skeleton";
 
 export default function Home() {
@@ -15,7 +14,7 @@ export default function Home() {
         description="노션 데이터베이스에 등록한 예문을 골라 타이핑을 연습하세요."
       />
       <Suspense fallback={<PassageListSkeleton />}>
-        <PassageBrowser passages={getMockPassageSummaries()} />
+        <PassageListSection />
       </Suspense>
     </Container>
   );

@@ -8,33 +8,123 @@ import "server-only";
 // - 클라이언트 컴포넌트로는 PassageSummary[] / Passage만 전달한다.
 // - 노션 SDK 타입, 토큰, 환경 변수 값은 이 파일 밖으로(특히 클라이언트로) 새어 나가면 안 된다.
 //
-// [미결] 오류 분류 책임 위치 (Task 011 실측 후 확정)
-// - 문제: Task 005 실측(PRD 6장 201행)에서 프로덕션 `use cache` 경계를 지난 오류는 digest만 가진
-//   일반 Error가 되어, 캐시 밖 래퍼에서 isNotionClientError/APIErrorCode로 분류할 수 없다.
-//   반대로 캐시 함수 안에서 실패를 `{ ok: false }` 결과로 반환하면 그 실패 결과가 캐시된다.
-// - 대안 A: 캐시 함수 안에서 분류하고 결과 객체(kind)를 반환하되, 실패 시 cacheLife를 짧게 지정해
-//   캐시 기간을 줄인다. 위험: 실패 결과가 짧게나마 캐시되어 복구가 늦고, 실패 시 cacheLife 지정이
-//   프로덕션에서 의도대로 동작하는지 미검증.
-// - 대안 B: 캐시 함수는 throw를 유지하고, 캐시 밖 래퍼는 분류 없이 transient로 취급하거나
-//   마지막 성공값(globalThis) 폴백을 쓴다. 위험: config와 transient를 구분하지 못해 안내 문구가
-//   부정확해지고, 폴백은 서버리스 다중 인스턴스에서 보장되지 않는다.
-// - 대안 C: 캐시 함수 안에서 오류를 구분 가능한 직렬화 값(예: 오류 코드를 담은 메시지 접두사)으로
-//   다시 던진다. 위험: 프로덕션에서 메시지가 가려지므로(digest만 남음) 동작하지 않을 가능성이 높다.
-// - 어느 대안을 택해도 이 파일의 반환 타입(PassageResult)은 변하지 않는다.
+// [D11 확정] 오류 분류 위치: 캐시 함수는 throw를 유지하고, 실패 후 캐시 밖에서 1회 사전 점검으로 분류한다(시도2).
+// - 배경: 프로덕션 `use cache` 경계를 지난 오류는 digest만 가진 일반 Error라 캐시 밖에서 code를 못 읽는다.
+//   캐시 함수가 오류를 던지면 그 결과는 캐시되지 않으므로 복구가 즉시 반영된다.
+// - 실측(2026-10-05, next build + next start, 노션 실호출):
+//   (a) 틀린 토큰 -> unauthorized -> config  (b) 틀린 data source ID -> object_not_found -> config
+//   (c) 환경 변수 누락 -> config  (d) 틀린 토큰 후 정상 토큰 복구 즉시 반영(오류 미캐시)
+//   (e) 캐시 후 토큰을 틀리게 바꿔도 320초 뒤까지 이전 목록 유지
+//   (f) 네트워크 차단(프록시 거부) -> 사전 점검도 실패(unknown) -> transient
+// - 대안 A(캐시 함수 안에서 분류해 결과 반환)는 구현·측정하지 않았다. 시도2가 기준(config/transient 구분,
+//   복구 즉시, 구현 단순)을 모두 충족해 채택했다.
+// - 주의: 이 함수를 정적 프리렌더에서 실행하면 오류 화면이 최대 1일간 박제되므로(실측: 환경 변수 누락 빌드 시
+//   `/`가 revalidate 1d로 config 화면 고정) 호출하는 서버 컴포넌트에서 connection()으로 요청 시점에 실행한다.
+// - 한계: 마지막 성공값(globalThis)은 서버리스 다중 인스턴스에서 인스턴스마다 달라 폴백이 보장되지 않는다.
+//   사전 점검은 요청당 노션 호출 1회를 추가하지만 실패 경로에서만 실행된다.
 
-/* eslint-disable @typescript-eslint/no-unused-vars -- 구현 전 스텁이라 매개변수가 미사용이다. 구현 Task에서 이 줄을 제거한다. (`_` 접두사는 이 프로젝트 lint에서 경고가 해소되지 않음) */
+import {
+  APIErrorCode,
+  ClientErrorCode,
+  isNotionClientError,
+} from "@notionhq/client";
 
-import type { Passage, PassageResult, PassageSummary } from "@/types/passage";
+import {
+  getDataSourceIds,
+  getNotionClient,
+  NotionConfigError,
+} from "@/lib/notion/client";
+import { getPassageSummariesCached } from "@/lib/notion/passages";
+import type {
+  Passage,
+  PassageErrorKind,
+  PassageResult,
+  PassageSummary,
+} from "@/types/passage";
+
+// 마지막 성공 목록. HMR/번들 분리에도 한 프로세스에서 공유하도록 globalThis에 둔다.
+// 서버리스 다중 인스턴스에서는 인스턴스마다 값이 달라 폴백이 보장되지 않는다(best effort).
+const LAST_GOOD_KEY = "__passageSummariesLastGood__";
+
+function getLastGood(): PassageSummary[] | undefined {
+  return (globalThis as unknown as Record<string, PassageSummary[] | undefined>)[
+    LAST_GOOD_KEY
+  ];
+}
+
+function setLastGood(list: PassageSummary[]): void {
+  (globalThis as unknown as Record<string, PassageSummary[] | undefined>)[
+    LAST_GOOD_KEY
+  ] = list;
+}
+
+/** 노션 오류를 error.code로만 분류한다(message 분기 금지). 알 수 없으면 transient */
+function classifyError(error: unknown): PassageErrorKind {
+  if (!isNotionClientError(error)) return "transient";
+  switch (error.code) {
+    case APIErrorCode.Unauthorized:
+    case APIErrorCode.RestrictedResource:
+    case APIErrorCode.ObjectNotFound:
+      return "config";
+    case APIErrorCode.RateLimited:
+    case APIErrorCode.InternalServerError:
+    case APIErrorCode.ServiceUnavailable:
+    case ClientErrorCode.RequestTimeout:
+    default:
+      return "transient";
+  }
+}
 
 /**
- * 예문 목록(PassageSummary[])을 조회한다. 구현은 Task 011.
+ * 프로덕션 `use cache` 경계를 지난 오류는 digest만 가진 일반 Error라 분류할 수 없다.
+ * 그래서 실패 후 캐시 밖에서 data source 조회를 1회 시도해 code로 분류한다.
+ * 사전 점검이 성공하면 원인은 일시 오류로 본다.
+ */
+async function classifyByProbe(): Promise<PassageErrorKind> {
+  try {
+    const { passagesDataSourceId } = getDataSourceIds();
+    await getNotionClient().dataSources.retrieve({
+      data_source_id: passagesDataSourceId,
+    });
+    return "transient";
+  } catch (error) {
+    if (error instanceof NotionConfigError) return "config";
+    const kind = classifyError(error);
+    console.warn(
+      `[passages] 목록 사전 점검 실패: ${isNotionClientError(error) ? error.code : "unknown"} -> ${kind}`,
+    );
+    return kind;
+  }
+}
+
+/**
+ * 예문 목록(PassageSummary[])을 조회한다.
  * 성공 시 Enabled 해제·매핑 실패 행이 제외된 목록. 실패 시 kind: config | transient | empty(0건).
+ * 캐시 조회가 실패해도 마지막 성공값이 있으면 그 값을 ok로 돌려준다.
  * 정렬/필터는 하지 않는다(클라이언트·페이지에서 filter.ts 사용).
  */
 export async function loadPassageSummaries(): Promise<
   PassageResult<PassageSummary[]>
 > {
-  throw new Error("Task 011에서 구현");
+  try {
+    getDataSourceIds();
+  } catch (error) {
+    if (error instanceof NotionConfigError) {
+      return { ok: false, kind: "config" };
+    }
+    throw error;
+  }
+
+  try {
+    const list = await getPassageSummariesCached();
+    if (list.length === 0) return { ok: false, kind: "empty" };
+    setLastGood(list);
+    return { ok: true, data: list };
+  } catch {
+    const lastGood = getLastGood();
+    if (lastGood) return { ok: true, data: lastGood };
+    return { ok: false, kind: await classifyByProbe() };
+  }
 }
 
 /**
@@ -43,6 +133,7 @@ export async function loadPassageSummaries(): Promise<
  * 환경 변수 누락·권한 오류는 config, 일시 오류는 transient.
  */
 export async function loadPassage(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Task 012 구현 전 스텁
   _id: string,
 ): Promise<PassageResult<Passage>> {
   throw new Error("Task 012에서 구현");
