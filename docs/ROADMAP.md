@@ -94,16 +94,17 @@
   - L2: `Container`, `EmptyState`(icon/title/description/action), `Logo`, `PageHeader`, `ThemeProvider`, `ThemeToggle`, `PassageErrorState`(Task 007), `StatItem`(Task 007)
   - L3: `SiteHeader`, `SiteFooter`, `MainNav`, `MobileNav`
   - L1(shadcn): alert, avatar, badge, breadcrumb, button, card, checkbox, dialog, dropdown-menu, field, input, label, navigation-menu, progress, scroll-area, select, separator, sheet, skeleton, sonner, tabs, textarea, toggle, toggle-group, tooltip
-  - 라우트 골격: 홈(`/`)은 `PageHeader` + `Suspense`로 감싼 `PassageBrowser`(Task 008, 더미 데이터). `/passages/[id]`는 `page.tsx`(params를 `Suspense` 안에서 해석), `_components/passage-placeholder.tsx`, `loading.tsx`, `not-found.tsx`
+  - 라우트 골격: 홈(`/`)은 `PageHeader` + `Suspense`로 감싼 `PassageListSection`(Task 011에서 노션 연동, Task 008 당시에는 더미 데이터의 `PassageBrowser`). `/passages/[id]`는 `page.tsx`(params를 `Suspense` 안에서 해석), `_components/passage-placeholder.tsx`, `loading.tsx`, `not-found.tsx`
   - 타입과 계약(Task 006, 시그니처만 있고 본문은 `throw` 스텁. `filter.ts`는 Task 008에서 구현 완료): `src/types/passage.ts`, `src/types/typing.ts`, `src/lib/typing/{normalize,judge,metrics,truncate}.ts`(구현 Task 010), `src/lib/passages/load.ts`(구현 Task 011, 012). 스텁 파일마다 있는 `eslint-disable` 한 줄은 구현 Task에서 제거
   - 스파이크 산출물(Task 004, 005): `src/lib/typing/pending-enter.ts`(Task 013에서 재사용), `src/lib/notion/client.ts`·`passages.ts`·`lines.ts`(Task 011의 출발점, Lines 본문 프로퍼티명 `Text`와 D11 대응책 반영 필요), `src/lib/notion/dev-probe.ts`와 개발 전용 라우트 `/dev/ime-log`, `/dev/notion-cache`(+`probe/route.ts`)는 Task 018에서 제거 또는 비노출 확인
 - 아직 없는 것: 노션 행 → `PassageSummary`/`Line` 매핑(`mappers.ts`), 판정·필터·정렬·래퍼 실제 구현, `src/hooks/` 내용(`.gitkeep`뿐), `/dev/typing-lab`, 예문 목록·타이핑·결과·오류 UI
 - 미확인으로 남은 것: Task 004 수동(선택) `suppressEnter` 수정 후 macOS 한글 IME 실입력 재확인, Task 003의 다크 모드·스크린샷 시각 확인
-- Task 007 산출물: 판정 토큰 `--typing-*` 7종(`globals.css`), 더미 데이터 `src/lib/mock/passages.ts`(Task 011에서 제거), 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거)
+- Task 007 산출물: 판정 토큰 `--typing-*` 7종(`globals.css`), 더미 데이터 `src/lib/mock/passages.ts`(목록 참조는 Task 011에서 제거, 파일 삭제는 `passage-screen.tsx`·`/dev/typing-ui`가 쓰므로 Task 012), 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거)
 - Task 008 산출물: `src/lib/passages/filter.ts` 구현(`parseFilter`, `filterPassages`, `sortPassages`, `getNextPassageId`, `buildFilterQuery`), `src/app/_components/`의 `passage-card.tsx`·`passage-filters.tsx`·`passage-browser.tsx`·`passage-list-skeleton.tsx`, 홈(`/`)과 `loading.tsx` 통합(더미 데이터는 Task 011에서 노션 데이터로 교체), 개발 전용 `/dev/passage-list`(Task 018에서 제거)
 - Task 009 산출물: `src/app/passages/[id]/_components/`의 `line-chars.tsx`·`typing-board.tsx`·`typing-stats.tsx`·`result-view.tsx`·`typing-screen.tsx`·`passage-screen.tsx`·`dummy-states.ts`(Task 014에서 `useTypingSession`으로 대체), `PassageErrorState`에 `description` prop 추가, `/passages/[id]` 정적 화면(더미), 개발 전용 `/dev/typing-ui`(Task 018에서 제거)
 - Task 010 산출물: `src/lib/typing/{normalize,judge,metrics,truncate}.ts` 구현(`normalizeLine`, `toCodePoints`, `judgeLine`, `isLineComplete`, `accumulateStats`, `computeMetrics`, `truncateToLine`, 스텁의 `eslint-disable` 제거), 개발 전용 `/dev/typing-lab`(`cases.ts` 45케이스, `_components/lab-results.tsx`, `page.tsx`, Task 018에서 제거). `typed` 0 정확도 기본값 100으로 확정
-- Task 011 이후는 모두 미착수
+- Task 011 산출물: `src/lib/notion/mappers.ts`(`toPassageSummary`, `mapPassageRows`), `passages.ts`의 `getPassageSummariesCached`(`stale 30`·`revalidate 300`·`expire 600`, 태그 `passages`), `src/lib/passages/load.ts`의 `loadPassageSummaries`(D11 확정, `loadPassage`는 Task 012 스텁 유지), 홈 연동 `src/app/_components/passage-list-section.tsx`(`connection()`으로 요청 시점 실행)·`passage-retry-button.tsx`(transient [다시 시도]). 스파이크 export(`getPassageRowsCached` 등)는 `/dev/notion-cache`가 쓰므로 유지(Task 018 제거)
+- 다음은 Task 012. Task 012 이후는 미착수
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -119,7 +120,7 @@
 | D8 | 조합 중 불일치 경고 (10-7) | MVP 제외, 선택 기능으로 분리 | 확정: MVP 제외(Task 021로 분리) | 002 |
 | D9 | 줄 최대 길이 제한 (10-9), 빈 줄 Enter (10-10) | 제한 없음(입력 줄 줄바꿈 허용), 빈 줄은 건너뜀 | 확정: 길이 제한 없음, 빈 줄은 건너뜀 | 002 |
 | D10 | 입력 요소 제어 방식 (10-1b, 1c) | 스파이크 결과로 controlled/uncontrolled 확정 | 확정: controlled 유지 + 조합 중 `value` 미변경 규칙(onChange 값을 그대로 setState). 근거(Chrome·macOS 실측, 2026-10-05): 조합 중 `value`를 바꾸면 자모가 합쳐지지 않고 키마다 `compositionstart`가 새로 시작해 조합이 깨진다. 변경하지 않으면 controlled·uncontrolled의 이벤트 순서와 값이 동일하며 글자 중복/누락이 없다. 줄 일치 판정은 `compositionend` 시점의 `e.currentTarget.value`로 한다 | 004 |
-| D11 | 재검증 실패 시 기존 캐시 유지 여부 (10-1a) | 스파이크 결과로 확정, 미유지 시 대응책 기록 | 확정: **미유지**. 프로덕션(`next start`) 실측(2026-10-05): stale 30·revalidate 30·expire 600에서 토큰을 틀리게 하고 30초 경과 후 새로고침하면 이전 데이터가 아니라 오류가 나고, 오류는 캐시되지 않아 매 요청 노션을 재호출하며 토글 해제 즉시 복구된다. 또한 `use cache` 경계를 지난 오류는 `APIResponseError`가 아니라 `digest`만 가진 일반 `Error`가 되어 캐시 밖에서 `isNotionClientError`/`APIErrorCode`로 분류할 수 없다(`unknown`). 대응책(Task 011): (1) 캐시 밖 래퍼가 마지막 성공값(`globalThis`)을 폴백으로 표시 — 단일 프로세스 실측에서 동작 확인, 서버리스 다중 인스턴스에서는 보장 안 됨 (2) 오류 분류는 캐시 함수 안에서 하고 결과 객체(`kind`)로 반환하되 실패 결과가 캐시되지 않도록 하는 방법은 미검증(실패 시 `cacheLife`를 짧게 지정하는 방식을 Task 011에서 실측) | 005 |
+| D11 | 재검증 실패 시 기존 캐시 유지 여부 (10-1a) | 스파이크 결과로 확정, 미유지 시 대응책 기록 | 확정: **미유지**. 프로덕션(`next start`) 실측(2026-10-05): stale 30·revalidate 30·expire 600에서 토큰을 틀리게 하고 30초 경과 후 새로고침하면 이전 데이터가 아니라 오류가 나고, 오류는 캐시되지 않아 매 요청 노션을 재호출하며 토글 해제 즉시 복구된다. 또한 `use cache` 경계를 지난 오류는 `APIResponseError`가 아니라 `digest`만 가진 일반 `Error`가 되어 캐시 밖에서 `isNotionClientError`/`APIErrorCode`로 분류할 수 없다(`unknown`). 대응책(Task 011): (1) 캐시 밖 래퍼가 마지막 성공값(`globalThis`)을 폴백으로 표시 — 단일 프로세스 실측에서 동작 확인, 서버리스 다중 인스턴스에서는 보장 안 됨 (2) 오류 분류는 캐시 함수 안에서 하고 결과 객체(`kind`)로 반환하되 실패 결과가 캐시되지 않도록 하는 방법은 미검증(실패 시 `cacheLife`를 짧게 지정하는 방식을 Task 011에서 실측)  **Task 011 확정(2026-10-05)**: 시도2 채택 — 캐시 함수는 throw 유지, `loadPassageSummaries`가 환경 변수를 선검사하고 실패 시 캐시 밖에서 `dataSources.retrieve` 사전 점검 1회로 `error.code` 분류(`unauthorized`/`restricted_resource`/`object_not_found` → config, 그 외·사전 점검 성공·네트워크 실패 → transient). 오류는 캐시되지 않아 복구 즉시 반영, 마지막 성공값(`globalThis`) 폴백은 단일 프로세스에서만 보장. 대안 A(캐시 안 분류)는 기준을 이미 충족해 구현·측정하지 않음. **중요**: 홈이 정적 프리렌더되면 오류 화면이 `revalidate 1d`로 박제되므로(환경 변수 누락 빌드로 확인) 섹션에서 `connection()`으로 요청 시점에 실행해야 한다 | 005, 011 |
 | D12 | 노션 DB 구조 (PRD 5장, 10-11) | 단일 DB + 페이지 본문 블록 | 확정: DB 2개 — Passages(예문 속성) + Lines(줄 단위 본문: `Text`, `Passage` 관계, `Line Number`, `Label`). 속성명·select 옵션 값은 영어. 환경 변수 `NOTION_LINES_DATA_SOURCE_ID` 추가 (2026-10-05) | 002 |
 
 ## 의존 관계 요약
@@ -399,33 +400,33 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - [x] 정적: `grep`으로 `src/lib/typing/`에 `react`, `next`, DOM 전역 import/사용 0건
   - 테스트 결과: (2026-10-05) `tsc`/`lint` 0건. `grep`으로 `src/lib/typing/{normalize,judge,metrics,truncate}.ts`에서 `react`/`next`/`document`/`window` 사용 0건, `eslint-disable` 제거 확인. `/dev/typing-lab`(개발 서버 `localhost:3000`, Playwright MCP)에서 `browser_evaluate`로 요약 `통과 45 / 전체 45`, 실패 행 0건, 콘솔 오류 0건, 라이트/다크 중 다크 스크린샷 확인. 결정: `typed` 0일 때 정확도 기본값은 **100**(오타가 아직 없음), `elapsedMs` 0 이하/비유한이면 CPM·WPM 0, 정확도는 0~100으로 제한하고 반올림은 표시 계층 책임. `incorrectSpace`는 불일치이면서 target 또는 input 글자가 공백일 때, 초과 입력은 조합 중에도 `extra`가 `composing`보다 우선, 조합 중에는 `matches`가 항상 `false`. `isLineComplete(target, input)`를 `judge.ts`에서 export. `truncateToLine` 결과는 NFC 정규화된다. 미확인: 프로덕션 빌드에서 `/dev/typing-lab`의 `notFound()` 동작은 확인하지 않았다(Task 018에서 `/dev/*`와 함께 재확인), 실제 IME 입력과의 연동은 Task 013·015에서 확인
 
-- **Task 011: 노션 목록 조회·캐싱·오류 분류 구현 및 목록 페이지 연동**
+- **Task 011: 노션 목록 조회·캐싱·오류 분류 구현 및 목록 페이지 연동** ✅
   - 관련: F001, F002, F008, F009, S1, S4, S6
   - 의존: 005, 006, 008
   - 구현 사항
-    - `src/lib/notion/passages.ts`(서버 전용): `getPassageSummariesCached()` — `'use cache'`, `cacheLife({ revalidate: 300 })`, `cacheTag('passages')`, `collectPaginatedAPI`로 100건 초과 전부 수집, `filter_properties`로 필요한 프로퍼티만 수신, 실패 시 throw
+    - `src/lib/notion/passages.ts`(서버 전용): `getPassageSummariesCached()` — `'use cache'`, `cacheLife({ stale: 30, revalidate: 300, expire: 600 })`(프리렌더 제외 하한 준수), `cacheTag('passages')`, `collectPaginatedAPI`로 100건 초과 전부 수집, `filter_properties`로 필요한 프로퍼티만 수신, 실패 시 throw
     - `src/lib/notion/mappers.ts`: 프로퍼티 이름(`Title`/`Language`/`Category`/`Order`/`Difficulty`/`Tags`/`Enabled`) 기반 매핑, `in_trash`만 삭제 판정, 언어 ko/en 외·필수값 누락·타입 불일치 행은 건너뛰고 로그, `Enabled === false` 제외(프로퍼티 없으면 전부 사용), 분류 기본 "기타", 태그 기본 `[]`
     - `src/lib/passages/load.ts`(캐시 밖 래퍼): try/catch로 `PassageResult` 분류 — 환경 변수 누락·`unauthorized`/`restricted_resource`/`object_not_found` → `config`, `rate_limited`/5xx/타임아웃 → `transient`, 0건 → `empty`. `isNotionClientError`/`APIErrorCode`로만 분기(`error.message` 분기 금지)
     - `/` 페이지에서 더미 데이터를 `loadPassageSummaries()` 결과로 교체, `kind`별 `PassageErrorState` 렌더
     - D11 결과에 따른 재검증 실패 대응 적용
   - 수용 기준
-    - [ ] 노션 DB의 모든 유효 행이 정렬(분류 → 순서 → 제목)되어 표시되고 `Enabled` 해제 행은 보이지 않는다
-    - [ ] 행 하나의 프로퍼티를 깨뜨려도 나머지 목록은 정상 표시된다
-    - [ ] 토큰 오류/빈 DB에서 각각 config/empty 안내가 나온다(S6 1차)
-    - [ ] 클라이언트 번들·RSC 페이로드에 토큰 없음(S4)
+    - [x] 노션 DB의 모든 유효 행이 정렬(분류 → 순서 → 제목)되어 표시되고 `Enabled` 해제 행은 보이지 않는다
+    - [x] 행 하나의 프로퍼티를 깨뜨려도 나머지 목록은 정상 표시된다
+    - [x] 토큰 오류/빈 DB에서 각각 config/empty 안내가 나온다(S6 1차)
+    - [x] 클라이언트 번들·RSC 페이로드에 토큰 없음(S4)
   - 테스트 체크리스트 (Playwright MCP)
-    - [ ] 정상: `/` → 카드 수가 노션 유효 행 수(검증용 DB 기준 `Enabled` 해제·언어 불일치 제외)와 일치, 정렬이 분류 → 순서 → 제목
-    - [ ] 정상: 카드의 분류/언어/난이도/태그 표시가 노션 값과 일치, 분류 없음 → "기타"
-    - [ ] 정상: 필터 조합 → 결과 수 일치, URL 쿼리 반영
-    - [ ] 오류 (config): `NOTION_TOKEN`을 틀린 값으로 바꿔 재기동 → 설정 오류 안내와 복구 버튼, 빈 화면 아님. 복구 후 정상 확인
-    - [ ] 오류 (config): `NOTION_DATA_SOURCE_ID` 삭제/틀림 → 설정 오류 안내
-    - [ ] 오류 (empty): 전부 `Enabled` 해제(또는 빈 data source) → 0건 안내("노션 DB에 예문 행을 추가하세요")
-    - [ ] 오류 (transient): 노션 도메인 요청 차단/오프라인 상태로 새로고침 → 일시 오류 안내와 [다시 시도], 캐시가 있으면 이전 데이터(D11)
-    - [ ] 엣지: 프로퍼티 하나를 깨뜨린 행(`Language` 값 `jp`, `Title` 비움)이 있어도 나머지 행 정상 표시, 서버 로그에 건너뜀 기록
-    - [ ] 엣지: 100건 초과 DB에서 전체 행 표시(가능하면 테스트용 DB 또는 `page_size` 축소로 확인)
-    - [ ] S4: `browser_network_requests` 응답 본문과 `outerHTML`에 토큰 문자열 0건
-    - [ ] 공통: 콘솔 오류 0건
-  - 테스트 결과: (미수행)
+    - [x] 정상: `/` → 카드 수가 노션 유효 행 수(검증용 DB 기준 `Enabled` 해제·언어 불일치 제외)와 일치, 정렬이 분류 → 순서 → 제목
+    - [x] 정상: 카드의 분류/언어/난이도/태그 표시가 노션 값과 일치, 분류 없음 → "기타"
+    - [x] 정상: 필터 조합 → 결과 수 일치, URL 쿼리 반영
+    - [x] 오류 (config): `NOTION_TOKEN`을 틀린 값으로 바꿔 재기동 → 설정 오류 안내와 복구 버튼, 빈 화면 아님. 복구 후 정상 확인
+    - [x] 오류 (config): `NOTION_DATA_SOURCE_ID` 삭제/틀림 → 설정 오류 안내
+    - [x] 오류 (empty): 전부 `Enabled` 해제(또는 빈 data source) → 0건 안내("노션 DB에 예문 행을 추가하세요")
+    - [x] 오류 (transient): 노션 도메인 요청 차단/오프라인 상태로 새로고침 → 일시 오류 안내와 [다시 시도], 캐시가 있으면 이전 데이터(D11)
+    - [x] 엣지: 프로퍼티 하나를 깨뜨린 행(`Language` 값 `jp`, `Title` 비움)이 있어도 나머지 행 정상 표시, 서버 로그에 건너뜀 기록
+    - [x] 엣지: 100건 초과 DB에서 전체 행 표시(가능하면 테스트용 DB 또는 `page_size` 축소로 확인)
+    - [x] S4: `browser_network_requests` 응답 본문과 `outerHTML`에 토큰 문자열 0건
+    - [x] 공통: 콘솔 오류 0건
+  - 테스트 결과: (2026-10-05, `next build && next start`, 노션 실호출, 기준선 Passages 4행) `tsc`/`lint`/`build` 통과. 홈 카드 4개, `?lang=en&difficulty=Medium` → 1개·URL 쿼리 유지·콘솔 오류 0건. **config**: 틀린 토큰(`unauthorized`), 틀린 data source ID(`object_not_found`), 환경 변수 누락 모두 설정 오류 안내, 토글로 틀린 토큰 → 정상 복구 즉시 반영(오류 미캐시). **transient**: 프록시 거부로 노션 차단 시 일시 오류 안내와 [다시 시도] 버튼. 캐시 후 토큰을 틀리게 바꿔도 320초 뒤까지 이전 목록 유지(캐시 stale 또는 마지막 성공값, 둘은 구분하지 못함). **S4**: HTML·RSC 응답·`outerHTML`에서 토큰 0건. **빌드**: 홈이 `◐`(PPR)이라 `.env` 없이도 빌드되며 빌드 중 노션 호출 없음. 발견: 홈을 정적 프리렌더에 두면 오류 화면이 1일 박제되고 빌드 중 노션 오류가 빌드를 실패시켜 `connection()`으로 해결. **노션 데이터 조작 검증(사용자 조작)**: `Empty Passage Sample`의 `Category`를 비우면 '기타'로 표시되고 정렬은 기타 → 애국가 → 창세기 → English Text(분류 한글 순. 4행은 분류가 모두 달라 같은 분류 안의 순서→제목 비교는 미확인), `Enabled` 해제 행은 목록에서 제외(로그 없음), `Language jp`(`reason=invalid-language`)와 `Title` 공백(`reason=empty-title`) 행은 건너뛰고 나머지는 정상 표시하며 서버 로그에는 행 id와 사유 코드만 기록, 유효 행 0건이면 '표시할 예문이 없습니다'와 'DB에 예문 행을 추가하세요' 안내(다시 시도 버튼 없음). 4행 복구 후 카드 4개 확인. **100건 초과**: 실제 100건 초과 DB는 없어 `page_size: 1` 임시 실험으로 대체(4행 전부 수집, 임시 코드 원복과 `git diff` 확인). 관찰: 노션 복구 직후 서버를 재기동한 첫 로드가 빈 화면이었다가 이후 같은 서버에서 정상으로 바뀐 1회가 있었고 원인은 확인하지 못했다(노션 실제 조회 결과는 정상). config 안내에는 복구 버튼이 없다(기본 `action: null`, 설정 변경은 재배포·재기동이 필요해 의도적으로 두지 않음)
 
 - **Task 012: 노션 본문 줄(Lines DB) 조회·매핑 및 타이핑 화면 데이터 연동**
   - 관련: F003, F008, F009, F015, S1, S6
