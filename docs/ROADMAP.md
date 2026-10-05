@@ -106,7 +106,8 @@
 - Task 011 산출물: `src/lib/notion/mappers.ts`(`toPassageSummary`, `mapPassageRows`), `passages.ts`의 `getPassageSummariesCached`(`stale 30`·`revalidate 300`·`expire 600`, 태그 `passages`), `src/lib/passages/load.ts`의 `loadPassageSummaries`(D11 확정, `loadPassage`는 Task 012 스텁 유지), 홈 연동 `src/app/_components/passage-list-section.tsx`(`connection()`으로 요청 시점 실행)·`passage-retry-button.tsx`(transient [다시 시도]). 스파이크 export(`getPassageRowsCached` 등)는 `/dev/notion-cache`가 쓰므로 유지(Task 018 제거)
 - Task 012 산출물: `src/lib/notion/lines-mapper.ts`(`toLine`, `mapLineRows`), `passage-lines.ts`의 `getPassageLinesCached`, `load.ts`의 `loadPassage`(`classifyByProbe` 일반화), `/passages/[id]`의 `PassageScreen` 연동(`nextHref`/`listHref`), `PassageRetryButton`을 `src/components/common/`으로 이동. 더미 `src/lib/mock/passages.ts`는 `/dev/typing-ui`가 쓰므로 유지(삭제는 Task 018). 타이핑 보드는 아직 정적 표시(입력 엔진은 Task 013)
 - Task 013 산출물: `src/lib/typing/session.ts`(순수 `sessionReducer`, `createInitialSessionState`, 시간은 이벤트로 주입, `pending-enter.ts` 재사용), `src/hooks/use-typing-session.ts`(`useTypingSession`: `inputProps`, 붙여넣기·드롭·줄바꿈 차단, Esc 초기화, `mismatch`/`shakeKey`, `getElapsedMs`), 개발 전용 `/dev/typing-session`(reducer 케이스 23건과 훅 데모, Task 018 제거 대상). `TypingBoard`의 입력창은 아직 읽기 전용이라 Task 014에서 훅의 `inputProps`로 연결해야 한다
-- 다음은 Task 014. Task 014 이후는 미착수
+- Task 014 산출물: `src/app/passages/[id]/_components/typing-screen.tsx`(`"use client"`, `useTypingSession` 연결, `finished`에서 `ResultView`, [다시 도전] 뒤 포커스 복구), `typing-board.tsx`(`inputProps`·`shakeKey`·`onBoardClick` 선택 prop, 줄 전환 자동 스크롤과 포커스 복구, 입력 포커스 시 재정렬, 불일치 흔들림은 Web Animations API), `typing-stats.tsx`(1초 틱, `computeMetrics`로 타수·정확도), `result-view.tsx`(`onRetry`), `/dev/typing-ui` 데모는 정적 미리보기를 데모 안으로 이동(`dummy-states.ts`는 데모용 유지, Task 018 제거 대상). 서버 코드 변경 없음
+- 다음은 Task 015. Task 015 이후는 미착수
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -138,7 +139,7 @@ Phase 3 (기능)          006 ─> 010(순수 함수 + /dev/typing-lab) ──�
                         005,006,008 ─> 011(노션 목록) ─┐                    │      │     │    │
                         010,011 ─> 012(노션 본문/파싱) ─┤                    │      │     │    │
                         004,009,010 ─> 013(입력 엔진 훅) ────────────────────┤      │     │    │
-                        011,012,013 ─> 014(타이핑 화면 통합) ─> 015(통합 테스트)
+                        011,012,013 ─> 014(타이핑 화면 통합) ✅ ─> 015(통합 테스트)
 Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형/다크/성능) ─> 018(최종 검증/배포)
 선택                    015 이후 019(F011 최근 기록), 020(새로고침 버튼), 021(조합 중 불일치 경고)
 ```
@@ -484,7 +485,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - [x] 공통: 콘솔 오류 0건
   - 테스트 결과: (2026-10-05, 개발 서버 `localhost:3000`, Playwright MCP) `tsc`/`lint`/`build` 통과(`/dev/typing-session` 정적 생성). `/dev/typing-session` reducer 케이스 `통과 23 / 전체 23`, 실패 0건, 콘솔 오류 0건. **영어(`pressSequentially`)**: `hello` 입력 시 `typed 5`, 타이머 시작과 경과 시간 증가 확인, `hello worlx` Enter → 줄 유지·`rejectSeq 1`·'줄이 일치하지 않습니다' 표시, 백스페이스+`d` 수정 후 표시 해제와 Enter 전환(buffer 비워짐), 초과 입력 `good dayXYZ` → `good day`로 잘림, `delay 0` 빠른 연타 `hello world` 11글자 누락·중복 없음(DOM value 일치), 첫 줄 백스페이스 6회 후 줄 유지, Esc → `idle`/0줄/0집계 초기화. **붙여넣기**: `paste` 이벤트와 `beforeinput(insertFromPaste)` 모두 `defaultPrevented`, 상태 불변. **한글 합성(`browser_evaluate` 이벤트 디스패치)**: 조합 중 `닭` → `typed` 19 유지·`composing true`, `compositionend` 후 20, 조합 중 Enter(`keyCode 229`) → `pendingEnter true`·전환 없음, `compositionend` 후 `finished` 1회(`committed 3`, `typed 26`), Chrome(mac)형 두 번째 Enter(`keyCode 13`) 무시(`rejectSeq 0`·상태 불변), `compositionend`가 먼저 오는 순서도 Enter 1회로 `finished`, 조합 중 초과 입력 `…왜가나`는 DOM value 강제 변경 없이 유지되다 `compositionend` 후 `…왜`로 잘리고 집계는 잘린 글자만(`typed 26`). **결정**: 줄 판정 상태를 순수 reducer(`src/lib/typing/session.ts`)로 분리해 시간은 이벤트 payload로 주입, `pending-enter.ts` 재사용, `mismatch` 플래그는 reducer가 관리(입력이 바뀌면 해제), 줄 전환 시 `pending`(`suppressEnter`)은 초기화하지 않음, `finished` 이후에는 `reset` 외 이벤트 무시, `TypingBoard`의 입력창은 읽기 전용이라 Task 014에서 훅의 `inputProps`로 교체 필요(데모는 별도 입력창 사용). **수동(S2, 사용자 조작, 2026-10-05)**: Chrome + macOS 한글 IME로 `/dev/typing-session`에서 겹받침(닭, 읽)·이중모음(왜, 의)·빠른 연타를 입력해 모두 통과(사용자 보고, 항목별 수치는 제공되지 않음). **미확인**: 모바일 IME, 프로덕션 `notFound()` 동작은 Task 018에서 재확인
 
-- **Task 014: 타이핑 화면 통합 — 실시간 판정, 자동 스크롤, 진행도, 결과/재도전**
+- **Task 014: 타이핑 화면 통합 — 실시간 판정, 자동 스크롤, 진행도, 결과/재도전** ✅
   - 관련: F003, F004, F006, F007, F014, S3, S5, S7
   - 의존: 011, 012, 013
   - 구현 사항
@@ -494,20 +495,20 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - 결과 뷰: `status === 'finished'`에서 `computeMetrics` 결과 표시, `aria-live`로 결과 안내, [다음 예문] → `nextHref`, [다시 도전] → 입력·타이머·줄 위치 초기화, [목록으로] → `/` + 필터 쿼리
     - 줄 완료 시 `aria-live`로 "n번째 줄 완료" 안내
   - 수용 기준
-    - [ ] 31줄 예문에서 현재 줄이 항상 화면 안에 보이고 마지막 줄 Enter 시 결과 뷰 진입(S7)
-    - [ ] 목록 → 창세기 1장 완주 → 결과 → 다음 예문까지 막힘 없음(S5)
-    - [ ] DevTools Performance에서 키 입력 → 표시 갱신 100ms 이내(S3 1차)
+    - [x] 31줄 예문에서 현재 줄이 항상 화면 안에 보이고 마지막 줄 Enter 시 결과 뷰 진입(S7)
+    - [x] 목록 → 창세기 1장 완주 → 결과 → 다음 예문까지 막힘 없음(S5)
+    - [ ] DevTools Performance에서 키 입력 → 표시 갱신 100ms 이내(S3 1차) — 프로파일은 찍지 않고 `performance.now()` 측정으로 갈음(테스트 결과 참조)
   - 테스트 체크리스트 (Playwright MCP)
-    - [ ] 정상: 영어 예문 전체 줄 입력 → 결과 뷰에 정확도/소요 시간/타수/WPM/오타 수/총 줄 수 표시, 수치가 `/dev/typing-lab` 기대 계산식과 일치
-    - [ ] 정상: 줄 전환마다 `browser_evaluate`로 현재 줄 요소의 `getBoundingClientRect()`가 viewport 안(S7), 진행도 "n / 총 줄 수"와 Progress 값 증가
-    - [ ] 정상: [다시 도전] → 입력·타이머·줄 위치 초기화, [다음 예문] → `nextHref` 이동, [목록으로] → `/` + 필터 쿼리
-    - [ ] 정상: 31줄 창세기 1장 (영어 대체 예문 또는 `browser_evaluate`로 값 주입)으로 완주 → 결과 → 다음 예문(S5)
-    - [ ] 오류/엣지: 필터 적용 상태에서 마지막 예문 완주 → [다음 예문]이 목록(`/` + 필터)으로 이동
-    - [ ] 엣지: 한 번도 입력하지 않고 새로고침 → 결과 없이 처음 상태, 결과 뷰에서 새로고침 → 같은 예문 타이핑 화면으로 복귀(결과 미유지)
-    - [ ] 엣지: 첫 입력 전 경과 시간 0 유지, `prefers-reduced-motion`(`browser_emulate_media`)에서 스크롤이 즉시 이동
-    - [ ] 성능(S3 1차): `browser_evaluate`에서 키 입력 이벤트 → 다음 프레임까지 시간을 `performance.now()`로 측정, 30줄 이상 예문에서 100ms 이내
-    - [ ] 공통: 콘솔 오류 0건
-  - 테스트 결과: (미수행)
+    - [x] 정상: 영어 예문 전체 줄 입력 → 결과 뷰에 정확도/소요 시간/타수/WPM/오타 수/총 줄 수 표시, 수치가 `/dev/typing-lab` 기대 계산식과 일치
+    - [x] 정상: 줄 전환마다 `browser_evaluate`로 현재 줄 요소의 `getBoundingClientRect()`가 viewport 안(S7), 진행도 "n / 총 줄 수"와 Progress 값 증가
+    - [x] 정상: [다시 도전] → 입력·타이머·줄 위치 초기화, [다음 예문] → `nextHref` 이동, [목록으로] → `/` + 필터 쿼리
+    - [x] 정상: 31줄 창세기 1장 (영어 대체 예문 또는 `browser_evaluate`로 값 주입)으로 완주 → 결과 → 다음 예문(S5)
+    - [x] 오류/엣지: 필터 적용 상태에서 마지막 예문 완주 → [다음 예문]이 목록(`/` + 필터)으로 이동
+    - [x] 엣지: 한 번도 입력하지 않고 새로고침 → 결과 없이 처음 상태, 결과 뷰에서 새로고침 → 같은 예문 타이핑 화면으로 복귀(결과 미유지)
+    - [x] 엣지: 첫 입력 전 경과 시간 0 유지, `prefers-reduced-motion`(`browser_emulate_media`)에서 스크롤이 즉시 이동
+    - [x] 성능(S3 1차): `browser_evaluate`에서 키 입력 이벤트 → 다음 프레임까지 시간을 `performance.now()`로 측정, 30줄 이상 예문에서 100ms 이내
+    - [x] 공통: 콘솔 오류 0건
+  - 테스트 결과: (2026-10-05, 개발 서버 `localhost:3000`, Playwright MCP) `tsc`/`lint`/`build` 통과. **영어(The Road Not Taken 10줄)**: 줄마다 현재 줄 rect가 viewport 안, 진행 1/10→10/10, 마지막 줄 Enter에서 결과 뷰(타수 3250·WPM 650·정확도 100%·오타 0·10줄, 연습 시간 6초). 타수·WPM은 경과 시간(약 6.5초)으로 역산한 값과 일치(WPM = 타수/5). 첫 입력 전 경과 시간 00:00·진행 1 / 10 유지. **오타/부분 입력**: 첫 글자를 틀리면 `incorrect` 표시·정확도 97.1%, Enter는 이동 없이 '줄이 일치하지 않습니다', 백스페이스로 고친 뒤 Enter로 이동, 부분 입력 Enter도 이동 없이 메시지, Esc → 00:00·1/10·정확도 100%로 초기화. **다시 도전**: 입력값·줄 위치·타이머 초기화와 입력창 포커스 복구. **링크**: 필터(`?lang=영어&difficulty=Medium`) 상태 마지막 예문 완주 시 [다음 예문]·[목록으로] 모두 `/?difficulty=Medium`(유효하지 않은 `lang` 값은 `parseFilter`가 무시). **새로고침**: 입력 전·결과 뷰에서 모두 결과 없이 처음 상태(D6). **reduced-motion**(`browser_emulate_media`): 전환 두 프레임 뒤 이미 목표 위치(간접 확인). **창세기 1장 31줄(S5·S7)**: 목록 카드 클릭 → 입력 이벤트 주입으로 완주 → 31줄 모두 viewport 안, 결과 뷰(타수 1458·WPM 291.5·정확도 100%·오타 0·31줄, 1분 6초) → [다음 예문]으로 The Road Not Taken 이동. **성능(S3 1차, 개발 서버, 입력 1600회)**: 입력→두 프레임 뒤까지 p50 33.3ms·p95 34.1ms·최대 34.5ms, 줄 전환 Enter 최대 50.4ms(두 프레임 대기 자체가 60Hz에서 약 33ms라 대부분은 측정 바닥). 콘솔 오류 0건. **결정**: `TypingScreen`만 `"use client"`, `TypingBoard`는 `inputProps`를 선택 prop으로 받아 없으면 읽기 전용(`/dev/typing-session` 호환), `TypingStats`가 1초 틱을 내부 state로 소유해 보드 재렌더 방지, 실시간 `totalChars`는 PRD 7.6의 '지금까지의 값'으로 해석해 완료 줄 + 현재 줄 입력분(줄 길이까지)으로 계산, 결과는 전체 줄 글자 수, `/dev/typing-ui`는 정적 미리보기를 데모 안으로 이동, 페이지 진입 시 입력창 자동 포커스는 하지 않음(포커스 시 스크롤 정렬이 첫 화면을 점프시킴, 화면 클릭으로 포커스). **발견·수정한 버그**: (1) 불일치 Enter의 흔들림 효과를 `key={shakeKey}` 리마운트로 구현하자 입력창이 포커스를 잃음 → Web Animations API(`animate()`)로 교체, reduced-motion이면 재생 안 함. (2) 줄이 바뀌면 현재 줄 `li`가 바뀌어 입력창이 다시 마운트되며 포커스를 잃음 → 줄 전환 시 포커스가 `body`에 있으면 입력창에 복구. **참고**: Playwright `pressSequentially`가 `”`를 `"`로 입력해 오판정처럼 보였으나 도구 현상이며 `insertText`로는 일치했다. **미확인**: 실제 한글 IME 입력(줄 전환 시 입력창 재마운트가 IME에 영향이 없는지는 수동 확인 필요), 모바일 가상 키보드 재정렬과 375px 레이아웃, 프로덕션 빌드 성능 측정, DevTools Performance 프로파일, 스크린 리더의 aria-live 낭독, [목록으로] 클릭 이동(href만 확인)
 
 - **Task 015: 핵심 기능 통합 테스트**
   - 관련: F001~F010, F012~F015, S1, S2, S4, S5, S6, S7
