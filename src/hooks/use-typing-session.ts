@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef } from "react";
+import { useReducer, useRef } from "react";
 
 import { judgeLine } from "@/lib/typing/judge";
 import {
@@ -46,7 +46,7 @@ export type UseTypingSessionResult = {
   focusInput: () => void;
   /** 숨은 input에 펼쳐 쓰는 props */
   inputProps: {
-    ref: React.RefObject<HTMLInputElement | null>;
+    ref: (el: HTMLInputElement | null) => (() => void) | void;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onCompositionStart: () => void;
@@ -73,15 +73,19 @@ export function useTypingSession(lines: Line[]): UseTypingSessionResult {
   );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const el = inputRef.current;
+  // 입력창은 줄마다 다른 DOM으로 다시 마운트되므로, 요소가 붙을 때마다 beforeinput 차단을 건다(콜백 ref).
+  function attachInput(el: HTMLInputElement | null) {
+    inputRef.current = el;
     if (!el) return;
     const handler = (e: InputEvent) => {
       if (BLOCKED_INPUT_TYPES.has(e.inputType)) e.preventDefault();
     };
     el.addEventListener("beforeinput", handler);
-    return () => el.removeEventListener("beforeinput", handler);
-  }, []);
+    return () => {
+      el.removeEventListener("beforeinput", handler);
+      if (inputRef.current === el) inputRef.current = null;
+    };
+  }
 
   const isComposing = state.pending.composing;
   const currentJudgement = judgeLine(texts[state.lineIndex] ?? "", state.buffer, {
@@ -102,7 +106,7 @@ export function useTypingSession(lines: Line[]): UseTypingSessionResult {
   }
 
   const inputProps: UseTypingSessionResult["inputProps"] = {
-    ref: inputRef,
+    ref: attachInput,
     value: state.buffer,
     onChange: (e) =>
       dispatch({
