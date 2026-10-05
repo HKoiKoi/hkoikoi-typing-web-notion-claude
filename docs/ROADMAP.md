@@ -101,7 +101,8 @@
 - 미확인으로 남은 것: Task 004 수동(선택) `suppressEnter` 수정 후 macOS 한글 IME 실입력 재확인, Task 003의 다크 모드·스크린샷 시각 확인
 - Task 007 산출물: 판정 토큰 `--typing-*` 7종(`globals.css`), 더미 데이터 `src/lib/mock/passages.ts`(Task 011에서 제거), 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거)
 - Task 008 산출물: `src/lib/passages/filter.ts` 구현(`parseFilter`, `filterPassages`, `sortPassages`, `getNextPassageId`, `buildFilterQuery`), `src/app/_components/`의 `passage-card.tsx`·`passage-filters.tsx`·`passage-browser.tsx`·`passage-list-skeleton.tsx`, 홈(`/`)과 `loading.tsx` 통합(더미 데이터는 Task 011에서 노션 데이터로 교체), 개발 전용 `/dev/passage-list`(Task 018에서 제거)
-- Task 009 이후는 모두 미착수
+- Task 009 산출물: `src/app/passages/[id]/_components/`의 `line-chars.tsx`·`typing-board.tsx`·`typing-stats.tsx`·`result-view.tsx`·`typing-screen.tsx`·`passage-screen.tsx`·`dummy-states.ts`(Task 014에서 `useTypingSession`으로 대체), `PassageErrorState`에 `description` prop 추가, `/passages/[id]` 정적 화면(더미), 개발 전용 `/dev/typing-ui`(Task 018에서 제거)
+- Task 010 이후는 모두 미착수
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -337,7 +338,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 테스트 결과: 2026-10-05 Playwright MCP 통과. `/` 카드 12개와 결과 수 12 일치, lang ko 4/en 8, difficulty Easy 4/Medium 3/Hard 3, category 시 2, tag history 2, `?lang=en&difficulty=Easy` 3건과 필터 복원, 카드 href에 필터 쿼리 포함, `?category=성경&difficulty=Easy`·`?category=없음` 0건 안내와 [조건 초기화]로 12건 복귀(쿼리 제거), 잘못된 `?lang=xx`는 무시되어 12건
     - 키보드(Tab/Enter)만으로 필터 조작 후 카드 선택 가능, 375/768/1280px에서 1/2/3열(가로 스크롤 없음), `/dev/passage-list` 빈 DB 안내와 필터 숨김, 콘솔 오류 0건, 라이트/다크 스크린샷 확인, `tsc`·`lint`·`build` 통과
 
-- **Task 009: 타이핑 화면·결과 뷰·오류 화면 정적 UI 완성 (더미 데이터)**
+- **Task 009: 타이핑 화면·결과 뷰·오류 화면 정적 UI 완성 (더미 데이터)** ✅
   - 관련: F003, F004, F006, F009(없는 예문/본문 없음), F014
   - 의존: 007
   - 구현 사항
@@ -350,16 +351,18 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - 오류 화면: `PassageErrorState`로 notFound("목록으로"), empty("노션 Lines DB에 이 예문의 줄을 추가하세요"), config, transient("다시 시도") 렌더
     - 접근성 골격: 숨은 입력창 `aria-label`, 현재 줄 `aria-current="true"`, 줄 완료/결과 영역 `aria-live="polite"`(글자 단위 낭독 없음)
   - 수용 기준
-    - [ ] 31줄 더미 예문에서 세 줄 상태와 7가지 글자 상태가 색 없이도(흑백 캡처) 구분된다
-    - [ ] 결과 뷰와 오류 4종이 더미 상태 전환으로 확인 가능하다
-    - [ ] 모바일 폭(375px)에서 긴 줄이 줄바꿈되고 레이아웃이 깨지지 않는다
+    - [x] 31줄 더미 예문에서 세 줄 상태와 7가지 글자 상태가 색 없이도(흑백 캡처) 구분된다
+    - [x] 결과 뷰와 오류 4종이 더미 상태 전환으로 확인 가능하다
+    - [x] 모바일 폭(375px)에서 긴 줄이 줄바꿈되고 레이아웃이 깨지지 않는다
   - 테스트 체크리스트 (Playwright MCP)
-    - [ ] 정상: 31줄 더미 예문 렌더 → `browser_snapshot`에서 줄 31개, 현재 줄 `aria-current="true"` 1개, 입력창 `aria-label` 존재
-    - [ ] 정상: 더미 상태 전환으로 결과 뷰와 오류 4종 렌더, 각 문구와 복구 버튼 존재
-    - [ ] 정상: 글자 상태 7종 → 흑백(`browser_emulate_media` forced-colors 또는 CSS grayscale 주입)에서도 보조 표시(밑줄/취소선/배경)로 구분되는 스크린샷
-    - [ ] 엣지: `browser_resize` 375px에서 긴 줄 줄바꿈, 가로 스크롤 없음(`document.documentElement.scrollWidth <= innerWidth`)
-    - [ ] 공통: 콘솔 오류 0건
-  - 테스트 결과: (미수행)
+    - [x] 정상: 31줄 더미 예문 렌더 → `browser_snapshot`에서 줄 31개, 현재 줄 `aria-current="true"` 1개, 입력창 `aria-label` 존재
+    - [x] 정상: 더미 상태 전환으로 결과 뷰와 오류 4종 렌더, 각 문구와 복구 버튼 존재
+    - [x] 정상: 글자 상태 7종 → 흑백(`browser_emulate_media` forced-colors 또는 CSS grayscale 주입)에서도 보조 표시(밑줄/취소선/배경)로 구분되는 스크린샷
+    - [x] 엣지: `browser_resize` 375px에서 긴 줄 줄바꿈, 가로 스크롤 없음(`document.documentElement.scrollWidth <= innerWidth`)
+    - [x] 공통: 콘솔 오류 0건
+  - 테스트 결과: 2026-10-05 Playwright MCP 통과. `/passages/mock-genesis-1` 줄 31개, `aria-current="true"` 1개, 입력창 `aria-label="타이핑 입력"`, 375px에서 scrollWidth 360 ≤ innerWidth 375, 콘솔 오류 0건
+    - `/dev/typing-ui` 전환: 불일치("줄이 일치하지 않습니다" role=alert), 초과 입력, 결과 뷰(지표 6종 + 버튼 3개), 오류 4종(notFound "예문 목록으로", empty "노션 Lines DB에 이 예문의 줄을 추가하세요", config, transient "다시 시도") 확인. grayscale(1) 주입 스크린샷에서 완료 줄(✓)·현재 줄(테두리+입력 줄)·남은 줄 구분, 글자 상태는 밑줄/취소선/배경/굵기로 구분
+    - `tsc`·`lint`·`build` 통과. empty 문구는 L2 기본값을 유지하고 `PassageErrorState`에 선택 prop `description`을 추가해 호출 측에서 주입
 
 ### Phase 3: 핵심 기능 구현
 
