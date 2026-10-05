@@ -164,7 +164,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 
 ## 6. 노션 연동 명세
 
-- **목록 조회**: 공식 SDK(`@notionhq/client`)의 `dataSources.query`(`POST /v1/data_sources/{id}/query`)로 프로퍼티만 가져온다. 환경 변수: 토큰, data source ID (모두 서버 전용, `NEXT_PUBLIC_` 접두사 금지). `@notionhq/client`는 아직 설치되지 않았으므로 구현 착수 시 설치하고 버전을 고정한다. API 버전은 SDK 기본값(`2025-09-03`)을 쓰며, `2026-03-11`로 올려도 읽기 전용 앱이라 영향은 거의 없다. data source ID는 노션 DB 설정의 "Manage data sources" → "Copy data source ID"로 얻으며 DB ID와 서로 바꿔 쓸 수 없다. 조회 시 `filter_properties`로 필요한 프로퍼티만 받는다.
+- **목록 조회**: 공식 SDK(`@notionhq/client`)의 `dataSources.query`(`POST /v1/data_sources/{id}/query`)로 프로퍼티만 가져온다. 환경 변수: `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID` (모두 서버 전용, `NEXT_PUBLIC_` 접두사 금지, 로컬은 `.env.local`). `@notionhq/client`는 `5.27.0`으로 정확히 고정해 설치했다. API 버전은 SDK 기본값(`2025-09-03`)을 쓰며, `2026-03-11`로 올려도 읽기 전용 앱이라 영향은 거의 없다. data source ID는 노션 DB 설정의 "Manage data sources" → "Copy data source ID"로 얻으며 DB ID와 서로 바꿔 쓸 수 없다. 조회 시 `filter_properties`로 필요한 프로퍼티만 받는다.
 - **본문 조회**: 타이핑 화면 진입 시 해당 페이지의 블록 자식 목록(`blocks.children.list`, page id를 block id로 사용)을 가져온다. `has_more`/`next_cursor`로 전부 수집한다(한 번에 최대 100개). 목록 조회에서는 본문을 읽지 않는다.
 - **블록 → 줄 변환**:
   - `paragraph` 블록의 `rich_text` 조각을 이어 붙여 텍스트로 만들고, 텍스트 안의 줄바꿈(`\n`)은 줄을 나눈다. 블록 하나가 보통 한 줄이다.
@@ -186,7 +186,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
   - 환경 변수 누락 → `config`
   - 없는 예문 ID → `notFound`, 본문 줄 0개 → `empty`
   - 행 단위 파싱 실패는 전체 실패로 만들지 않고 건너뜀
-- **토큰 비노출 제약**: 토큰은 서버 모듈에서만 읽고 클라이언트 컴포넌트로는 가공된 `PassageSummary[]`/`Passage`만 전달한다. 서버 전용 모듈에는 `server-only` 패키지 import를 고려(미결).
+- **토큰 비노출 제약**: 토큰은 서버 모듈에서만 읽고 클라이언트 컴포넌트로는 가공된 `PassageSummary[]`/`Passage`만 전달한다. 서버 전용 모듈(`src/lib/notion/*`와 서버 래퍼)에는 첫 줄에 `import "server-only"`를 둔다(`server-only@0.0.1` 도입 확정).
 
 ## 7. 타이핑 판정 로직
 
@@ -247,7 +247,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 - Next.js 16.3.8 (App Router), React 19.2.8, React Compiler(babel-plugin-react-compiler 1.0.0), TypeScript ^5
 - Tailwind CSS ^4, shadcn/ui(radix-nova, radix-ui ^1.6.7), lucide-react ^1.52.0, sonner ^2.0.8
 - next-themes ^0.4.6, usehooks-ts ^3.1.1
-- 추가: `@notionhq/client` (아직 미설치. 설치 시 최신 안정 버전 확인 후 고정). 노션 공식 SDK라 data source 쿼리와 페이지네이션 헬퍼 제공
+- 추가: `@notionhq/client` 5.27.0(정확 고정), `server-only` 0.0.1. 노션 공식 SDK라 data source 쿼리와 페이지네이션 헬퍼 제공
 - 폼 검증 라이브러리, DB, 인증 라이브러리는 사용하지 않음
 - 새 UI는 `npx shadcn@latest add`로 추가(필요 후보: Card, Badge, Select/ToggleGroup, Button, Skeleton, Progress, ScrollArea). 컴포넌트 계층 규칙(ui → common → layout → app)과 `/components` 쇼케이스 반영 규칙 준수
 
@@ -267,12 +267,12 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 ## 10. 미결 사항
 
 1. 구현 중 검증 필요(문서로 확인하지 못함): (a) 백그라운드 재검증이 실패해도 기존 `use cache` 항목이 유지되는지(토큰을 일부러 틀리게 하고 5분 뒤 새로고침해 확인), (b) 조합 중 controlled input value 변경의 영향(macOS 한글 IME, Chrome·Safari), (c) 한글 IME의 음절별 `compositionstart/end` 발생 패턴(OS·브라우저별 이벤트 로그).
-2. `@notionhq/client` 설치 시 호환 버전 확정(API 버전은 6장 참고).
-3. 한글 타수를 음절 기준(현재안)으로 둘지, 자모 키 입력 수 기준으로 바꿀지.
-4. 결과 뷰를 별도 라우트로 둘지(현재안: 타이핑 화면 내 상태). 새로고침 시 결과 유지 여부.
-5. "다음 예문" 순서: 목록 순서/랜덤 중 선택(현재안: URL 필터 쿼리로 계산한 현재 필터 목록의 다음 항목, 같은 분류의 `순서` 기준).
-6. `server-only` 패키지 도입 여부와 환경 변수 이름.
-7. 조합 중 불일치 경고(자모 접두 비교)를 MVP에 넣을지.
+2. `@notionhq/client` 설치 시 호환 버전 확정(API 버전은 6장 참고). **(결정: 5.27.0 정확 고정, SDK 기본 API 버전 2025-09-03 확인, Task 002)**
+3. 한글 타수를 음절 기준(현재안)으로 둘지, 자모 키 입력 수 기준으로 바꿀지. **(결정: 음절 기준, Task 002)**
+4. 결과 뷰를 별도 라우트로 둘지(현재안: 타이핑 화면 내 상태). 새로고침 시 결과 유지 여부. **(결정: 타이핑 화면 내 상태, 새로고침 시 결과 미유지, Task 002)**
+5. "다음 예문" 순서: 목록 순서/랜덤 중 선택(현재안: URL 필터 쿼리로 계산한 현재 필터 목록의 다음 항목, 같은 분류의 `순서` 기준). **(결정: 현재안 그대로, Task 002)**
+6. `server-only` 패키지 도입 여부와 환경 변수 이름. **(결정: `server-only` 도입, 환경 변수 `NOTION_TOKEN`/`NOTION_DATA_SOURCE_ID`, Task 002)**
+7. 조합 중 불일치 경고(자모 접두 비교)를 MVP에 넣을지. **(결정: MVP 제외, 선택 기능으로 분리, Task 002)**
 8. 이전 줄로 돌아가기와 중간 이탈 후 이어치기를 MVP 이후에 둘지(현재안: 제외).
-9. 줄 최대 길이 제한 필요 여부(한 줄이 매우 길면 입력 줄이 줄바꿈되어 가독성이 떨어짐). 애국가처럼 한 덩어리로 붙은 본문은 노션에서 사용자가 줄을 나눠 적는 것을 전제로 함(자동 분할 없음).
-10. 줄 사이의 빈 줄(연 구분)은 현재안에서 건너뜀. 빈 줄에서도 Enter를 치게 하고 싶은지.
+9. 줄 최대 길이 제한 필요 여부(한 줄이 매우 길면 입력 줄이 줄바꿈되어 가독성이 떨어짐). 애국가처럼 한 덩어리로 붙은 본문은 노션에서 사용자가 줄을 나눠 적는 것을 전제로 함(자동 분할 없음). **(결정: 길이 제한 없음, Task 002)**
+10. 줄 사이의 빈 줄(연 구분)은 현재안에서 건너뜀. 빈 줄에서도 Enter를 치게 하고 싶은지. **(결정: 건너뜀, Task 002)**
