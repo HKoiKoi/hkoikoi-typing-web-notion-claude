@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Container } from "@/components/common/container";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { PassagePlaceholder } from "./_components/passage-placeholder";
+import { PassageScreen } from "./_components/passage-screen";
 
 export default function PassagePage({ params }: PageProps<"/passages/[id]">) {
   return (
@@ -15,7 +15,7 @@ export default function PassagePage({ params }: PageProps<"/passages/[id]">) {
         </Container>
       }
     >
-      <PassagePlaceholder params={params} />
+      <PassageScreen params={params} />
     </Suspense>
   );
 }

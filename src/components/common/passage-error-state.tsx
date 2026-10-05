@@ -53,18 +53,22 @@ const ERROR_CONTENT: Record<PassageErrorKind, ErrorContent> = {
 
 export function PassageErrorState({
   kind,
+  description,
   action,
 }: {
   kind: PassageErrorKind;
+  /** 지정하면 kind별 기본 설명을 대체한다. (예: 줄이 0개인 예문의 empty 안내) */
+  description?: string;
   /** 지정하면 kind별 기본 복구 액션을 대체한다. `null`이면 액션을 숨긴다. */
   action?: ReactNode;
 }) {
-  const { icon, title, description, action: defaultAction } = ERROR_CONTENT[kind];
+  const content = ERROR_CONTENT[kind];
+  const { icon, title, action: defaultAction } = content;
   return (
     <EmptyState
       icon={icon}
       title={title}
-      description={description}
+      description={description ?? content.description}
       action={action === undefined ? defaultAction : action}
     />
   );
