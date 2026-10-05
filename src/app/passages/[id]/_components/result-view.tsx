@@ -16,10 +16,13 @@ export function ResultView({
   result,
   nextHref,
   listHref,
+  onRetry,
 }: {
   result: TypingResult;
   nextHref: string;
   listHref: string;
+  /** [다시 도전] 클릭 시 호출. 입력·타이머·줄 위치 초기화는 호출측이 한다. */
+  onRetry?: () => void;
 }) {
   return (
     <section
@@ -42,7 +45,9 @@ export function ResultView({
         <Button asChild>
           <Link href={nextHref}>다음 예문</Link>
         </Button>
-        <Button variant="outline">다시 도전</Button>
+        <Button variant="outline" onClick={onRetry}>
+          다시 도전
+        </Button>
         <Button asChild variant="ghost">
           <Link href={listHref}>목록으로</Link>
         </Button>

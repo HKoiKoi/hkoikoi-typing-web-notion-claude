@@ -1,40 +1,108 @@
-import type { Passage } from "@/types/passage";
+"use client";
 
-import { buildPreviewStates, PREVIEW_INPUT_VALUE } from "./dummy-states";
+import { useEffect, useRef } from "react";
+
+import { useTypingSession } from "@/hooks/use-typing-session";
+import { toCodePoints } from "@/lib/typing/normalize";
+import { computeMetrics } from "@/lib/typing/metrics";
+import type { Passage } from "@/types/passage";
+import type { TypingResult } from "@/types/typing";
+
+import { ResultView } from "./result-view";
 import { TypingBoard } from "./typing-board";
 import { TypingStats } from "./typing-stats";
 
-// Phase 2 전용: 현재 줄(5절)과 지표를 고정한 정적 화면. Task 014에서 useTypingSession으로 대체한다.
-const PREVIEW_CURRENT_INDEX = 4;
+/** 줄 글자 수(코드 포인트 기준, PRD 7.1). */
+function countChars(text: string): number {
+  return toCodePoints(text).length;
+}
 
 export function TypingScreen({
   passage,
-  mismatch = false,
+  nextHref = "/",
+  listHref = "/",
 }: {
   passage: Passage;
-  mismatch?: boolean;
-  /** 다음 예문(없으면 목록) 이동 경로. Task 014에서 결과 화면 버튼에 사용한다. */
+  /** 다음 예문(없으면 목록) 이동 경로. 결과 화면 버튼에 쓴다. */
   nextHref?: string;
-  /** 예문 목록 복귀 경로(필터 유지). Task 014에서 사용한다. */
+  /** 예문 목록 복귀 경로(필터 유지). 결과 화면 버튼에 쓴다. */
   listHref?: string;
 }) {
-  const currentIndex = Math.min(PREVIEW_CURRENT_INDEX, passage.lines.length - 1);
-  const currentLine = passage.lines[currentIndex];
+  const session = useTypingSession(passage.lines);
+  const { state, focusInput } = session;
+  const focusAfterResetRef = useRef(false);
+
+  // [다시 도전] 뒤 보드가 다시 마운트되면 입력창에 포커스를 돌려 준다.
+  useEffect(() => {
+    if (state.status === "idle" && focusAfterResetRef.current) {
+      focusAfterResetRef.current = false;
+      focusInput();
+    }
+  }, [state.status, focusInput]);
+
+  const lines = passage.lines;
+  const totalChars = lines.reduce((sum, line) => sum + countChars(line.text), 0);
+
+  if (state.status === "finished") {
+    const elapsedMs = session.getElapsedMs(state.finishedAt ?? 0);
+    const metrics = computeMetrics({
+      totalChars,
+      typed: state.acc.typed,
+      mistakes: state.acc.mistakes,
+      elapsedMs,
+    });
+    const result: TypingResult = {
+      passageId: passage.id,
+      accuracy: Math.round(metrics.accuracy * 10) / 10,
+      elapsedMs,
+      cpm: Math.round(metrics.cpm),
+      wpm: Math.round(metrics.wpm * 10) / 10,
+      mistakes: state.acc.mistakes,
+      lineCount: lines.length,
+    };
+    return (
+      <ResultView
+        result={result}
+        nextHref={nextHref}
+        listHref={listHref}
+        onRetry={() => {
+          focusAfterResetRef.current = true;
+          session.reset();
+        }}
+      />
+    );
+  }
+
+  const currentText = lines[state.lineIndex]?.text ?? "";
+  const currentLength = countChars(currentText);
+  const bufferChars = toCodePoints(state.buffer);
+  const extraText = bufferChars.slice(currentLength).join("");
+  // 타수 계산용: 완료한 줄 + 현재 줄에 입력한 글자(줄 길이까지)
+  const doneChars =
+    lines.slice(0, state.lineIndex).reduce((sum, l) => sum + countChars(l.text), 0) +
+    Math.min(bufferChars.length, currentLength);
+
   return (
     <div className="flex flex-col gap-6">
       <TypingStats
-        elapsedMs={83_000}
-        currentLine={currentIndex + 1}
-        totalLines={passage.lines.length}
-        cpm={312}
-        accuracy={96.4}
+        status={state.status}
+        getElapsedMs={session.getElapsedMs}
+        currentLine={state.lineIndex + 1}
+        totalLines={lines.length}
+        doneChars={doneChars}
+        typed={state.acc.typed}
+        mistakes={state.acc.mistakes}
       />
       <TypingBoard
-        lines={passage.lines}
-        currentIndex={currentIndex}
-        currentStates={buildPreviewStates(Array.from(currentLine.text).length)}
-        inputValue={PREVIEW_INPUT_VALUE}
-        mismatch={mismatch}
+        lines={lines}
+        currentIndex={state.lineIndex}
+        currentStates={session.currentJudgement.states}
+        inputValue={state.buffer}
+        extraText={extraText}
+        mismatch={session.mismatch}
+        shakeKey={session.shakeKey}
+        inputProps={session.inputProps}
+        onBoardClick={focusInput}
       />
     </div>
   );

@@ -1,7 +1,12 @@
+"use client";
+
 import { Check, CircleAlert } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { useMediaQuery } from "usehooks-ts";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import type { UseTypingSessionResult } from "@/hooks/use-typing-session";
 import { cn } from "@/lib/utils";
 import type { Line } from "@/types/passage";
 import type { CharState } from "@/types/typing";
@@ -45,7 +50,8 @@ function PendingLine({ line }: { line: Line }) {
 
 /**
  * 완료 줄 / 현재 줄 / 남은 줄을 분리해 렌더한다.
- * 현재 줄 바로 아래에 입력 줄을 둔다. 정적 단계에서는 입력창이 읽기 전용이다.
+ * 현재 줄 바로 아래에 입력 줄을 둔다. `inputProps`가 없으면 입력창은 읽기 전용이다.
+ * 줄이 바뀌면 현재 줄을 화면 세로 중앙 부근으로 스크롤한다(첫 렌더 제외).
  */
 export function TypingBoard({
   lines,
@@ -54,6 +60,9 @@ export function TypingBoard({
   inputValue,
   extraText,
   mismatch = false,
+  inputProps,
+  shakeKey,
+  onBoardClick,
 }: {
   lines: Line[];
   currentIndex: number;
@@ -62,9 +71,55 @@ export function TypingBoard({
   extraText?: string;
   /** Enter 시 줄이 일치하지 않을 때 강조한다. */
   mismatch?: boolean;
+  /** useTypingSession의 inputProps. 없으면 읽기 전용 입력창을 보여 준다. */
+  inputProps?: UseTypingSessionResult["inputProps"];
+  /** 불일치 Enter마다 바뀌는 값. 바뀔 때마다 입력 줄 흔들림을 재생한다. */
+  shakeKey?: number;
+  /** 보드 영역 클릭 시 호출(입력창 재포커스용). */
+  onBoardClick?: () => void;
 }) {
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const currentRef = useRef<HTMLLIElement>(null);
+  const inputWrapRef = useRef<HTMLDivElement>(null);
+  const prevIndexRef = useRef(currentIndex);
+
+  function alignCurrentLine() {
+    currentRef.current?.scrollIntoView({
+      block: "center",
+      behavior: reducedMotion ? "auto" : "smooth",
+    });
+  }
+
+  // 줄이 바뀐 경우에만 정렬한다. 첫 렌더에서는 페이지 상단을 유지한다.
+  useEffect(() => {
+    if (prevIndexRef.current === currentIndex) return;
+    prevIndexRef.current = currentIndex;
+    // 현재 줄이 바뀌면 입력창이 다른 li로 다시 마운트되어 포커스를 잃으므로 되돌려 준다.
+    if (document.activeElement === document.body) {
+      currentRef.current?.querySelector("input")?.focus({ preventScroll: true });
+    }
+    currentRef.current?.scrollIntoView({
+      block: "center",
+      behavior: reducedMotion ? "auto" : "smooth",
+    });
+  }, [currentIndex, reducedMotion]);
+
+  // 불일치 Enter마다 입력 줄을 짧게 흔든다. key로 다시 마운트하면 입력창이 포커스를 잃으므로 Web Animations API를 쓴다.
+  useEffect(() => {
+    if (!shakeKey || reducedMotion) return;
+    inputWrapRef.current?.animate(
+      [
+        { transform: "translateX(0)" },
+        { transform: "translateX(-6px)" },
+        { transform: "translateX(6px)" },
+        { transform: "translateX(0)" },
+      ],
+      { duration: 300, easing: "ease-in-out" },
+    );
+  }, [shakeKey, reducedMotion]);
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" onClick={onBoardClick}>
       <p aria-live="polite" className="sr-only">
         {currentIndex > 0 ? `${currentIndex}번째 줄 완료` : ""}
       </p>
@@ -75,6 +130,7 @@ export function TypingBoard({
           return (
             <li
               key={index}
+              ref={currentRef}
               aria-current="true"
               data-line-state="current"
               className="flex flex-col gap-2 rounded-lg border-2 border-typing-current bg-muted/40 p-3"
@@ -88,11 +144,10 @@ export function TypingBoard({
                   className="flex-1 text-xl"
                 />
               </div>
-              <div className="flex flex-col gap-1 pl-15">
+              <div ref={inputWrapRef} className="flex flex-col gap-1 pl-15">
                 <Input
-                  readOnly
-                  value={inputValue}
-                  aria-label="타이핑 입력"
+                  {...(inputProps ?? { readOnly: true, value: inputValue, "aria-label": "타이핑 입력" })}
+                  onFocus={() => requestAnimationFrame(alignCurrentLine)}
                   aria-invalid={mismatch}
                   className={cn(
                     "h-11 font-mono text-lg",
