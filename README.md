@@ -1,8 +1,37 @@
-# HKoiKoi Next Starter Kit
+# 노션 타이핑 연습
 
-Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · shadcn/ui · lucide-react · usehooks-ts · Pretendard(CDN)
+노션 데이터베이스에 등록한 한국어/영어 여러 줄 본문(예문)을 불러와 한 줄씩 따라 치는 타이핑 연습 웹앱입니다.
 
-## 시작하기
+## 🎯 프로젝트 개요
+
+- **목적**: 직접 관리하는 본문(성경 한 장, 애국가, 영어 글 등)으로 타이핑을 연습하고, 글자별 실시간 판정과 결과 요약(정확도, 소요 시간, CPM/WPM)을 제공
+- **범위**: 단일 사용자, 로그인 없음, 노션 DB는 읽기 전용
+- **사용자**: 노션으로 본문을 관리하는 본인 1인
+
+## 📱 주요 페이지
+
+1. **예문 목록** (`/`) - 예문 카드 조회 및 분류/언어/난이도/태그 필터
+2. **타이핑 화면** (`/passages/[id]`) - 한 줄씩 타이핑, 완료 후 결과 뷰 표시
+3. **오류/빈 상태** - 노션 오류, 예문 0건, 잘못된 예문 접근 안내
+
+## ⚡ 핵심 기능
+
+- 노션 DB 연동 및 캐싱 (서버 전용 조회, 토큰 비노출)
+- 글자별 실시간 판정, 한글 IME 조합 처리
+- 줄 전환(Enter), 자동 스크롤, 진행도 표시
+- 결과 요약, 다음 예문/다시 도전
+- 다크모드
+
+## 🛠️ 기술 스택
+
+- Framework: Next.js 16 (App Router)
+- Runtime: React 19 (React Compiler)
+- Language: TypeScript
+- Styling: Tailwind CSS v4
+- UI Components: shadcn/ui, lucide-react
+- 기타: next-themes, usehooks-ts, Pretendard(CDN)
+
+## 🚀 시작하기
 
 ```bash
 npm install
@@ -11,27 +40,13 @@ npm run build   # 프로덕션 빌드
 npm run lint
 ```
 
-## 폴더 구조 (컴포넌트 계층)
+## 📋 개발 상태
 
-| 계층 | 경로 | 설명 |
-|---|---|---|
-| L1 Primitives | `src/components/ui/` | shadcn 컴포넌트. `npx shadcn@latest add <name>`으로만 추가 |
-| L2 Common | `src/components/common/` | 공통 조합 컴포넌트 (ThemeToggle, Logo, PageHeader, EmptyState, Container) |
-| L3 Layout | `src/components/layout/` | SiteHeader, SiteFooter, MainNav, MobileNav |
-| L4 Page | `src/app/` | layout / page / error / loading / not-found |
+- ✅ 기본 프로젝트 구조 설정 (컴포넌트 4계층, 사이트 설정, 테마)
+- 🔄 예문 목록 화면 (자리표시자)
+- ⏳ 노션 연동, 타이핑 화면, 결과 뷰, 오류/빈 상태
 
-- `src/config/site.ts`: 사이트 이름·설명·내비게이션 링크
-- `src/hooks/`: 프로젝트 전용 훅 (먼저 [usehooks-ts](https://usehooks-ts.com)에 있는지 확인)
-- 상위 계층은 하위 계층만 import 합니다.
+## 📖 문서
 
-## 포함된 shadcn 컴포넌트
-
-button, badge, card, separator, sheet, dropdown-menu, sonner, skeleton, input, label, textarea, checkbox, select, field, alert, dialog, tooltip, tabs, avatar, navigation-menu, breadcrumb
-
-필요 시 추가: `npx shadcn@latest add table accordion pagination`
-
-## 기타
-
-- 다크모드: `next-themes` (shadcn/sonner 표준), `.dark` 클래스 방식
-- 폰트: `src/app/layout.tsx`에서 Pretendard Variable CDN 로드
-- `/components` 페이지에서 컴포넌트 예시 확인
+- [PRD 문서](./docs/PRD.md) - 상세 요구사항
+- [개발 가이드](./CLAUDE.md) - 개발 지침

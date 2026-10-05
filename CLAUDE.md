@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
+**노션 타이핑 연습**은 노션 DB의 한국어/영어 여러 줄 예문을 불러와 한 줄씩 따라 치는 단일 사용자 타이핑 연습 웹앱이다.
+
+상세 요구사항은 @/docs/PRD.md 참조
+
 ## Commands
 
 ```bash
@@ -40,5 +44,4 @@ import 방향이 단방향인 4계층 구조. **상위 계층은 하위 계층�
 - `src/config/site.ts`의 `siteConfig`가 사이트 이름·설명·내비게이션 링크의 단일 소스. 메타데이터(`layout.tsx`)와 내비 컴포넌트가 이를 참조한다.
 - `src/hooks/`: 프로젝트 전용 훅. 만들기 전에 usehooks-ts에 이미 있는지 확인.
 - 루트 `layout.tsx`가 `ThemeProvider`(class 방식 다크모드, `.dark`) → `TooltipProvider` → Header/main/Footer, 그리고 `Toaster`를 구성한다. 새 전역 provider는 여기에 추가.
-- `/components` 라우트(`src/app/components/`)는 컴포넌트 쇼케이스 페이지. 컴포넌트를 추가/변경하면 여기에 예시를 반영.
 - 프로젝트 문서와 UI 문구는 한국어.
