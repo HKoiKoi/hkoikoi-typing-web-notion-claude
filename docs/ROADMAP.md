@@ -68,7 +68,7 @@
 - `browser_network_requests` 응답 본문에 노션 토큰 문자열 0건
 - 화면에 표시된 수치가 기대값과 일치
 
-**노션 오류 재현**: `.env.local`의 값을 바꾸고 dev 서버를 재기동한다(토큰 틀림, data source ID 틀림, 값 삭제). 테스트가 끝나면 반드시 원래 값으로 복구하고 정상 동작을 한 번 더 확인한다.
+**노션 오류 재현**: `.env`의 값을 바꾸고 dev 서버를 재기동한다(토큰 틀림, data source ID 틀림, 값 삭제). 테스트가 끝나면 반드시 원래 값으로 복구하고 정상 동작을 한 번 더 확인한다.
 
 **한글 IME 한계**: Playwright로 실제 IME 조합을 재현하기 어렵다. S2는 macOS 실기기 수동 시나리오(Chrome·Safari·Firefox)가 기준이다. `browser_evaluate`로 `compositionstart/update/end`와 `input` 이벤트를 디스패치하는 합성 시나리오는 로직 회귀 확인용 보조 수단이며 수동 결과를 대체하지 않는다.
 
@@ -102,7 +102,7 @@
 | # | 항목 (PRD 10장) | 현재안/권장안 | 결정 | 결정 Task |
 |---|----------------|-------------|------|----------|
 | D1 | `server-only` 패키지 도입 (10-6) | 도입. `src/lib/notion/*`와 서버 래퍼 첫 줄에 `import "server-only"` | 확정: 도입(`server-only@0.0.1` 정확 고정 설치) | 002 |
-| D2 | 환경 변수 이름 (10-6) | `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID` (`NEXT_PUBLIC_` 금지), 로컬은 `.env.local` | 확정: 권장안 그대로 (D12로 `NOTION_LINES_DATA_SOURCE_ID` 추가) | 002 |
+| D2 | 환경 변수 이름 (10-6) | `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID` (`NEXT_PUBLIC_` 금지), 로컬은 `.env` | 확정: 권장안 그대로 (D12로 `NOTION_LINES_DATA_SOURCE_ID` 추가) | 002 |
 | D3 | `@notionhq/client` 버전 (10-2) | 설치 시점 최신 안정 버전을 `^` 없이 정확히 고정, API 버전은 SDK 기본값(`2025-09-03`) | 확정: `5.27.0` 정확 고정, 기본 API 버전 `2025-09-03`(`Client.js`의 `defaultNotionVersion`으로 확인) | 002 |
 | D4 | 순수 함수 검증 방식 | Vitest 미도입. 개발 전용 `/dev/typing-lab` 페이지 + Playwright MCP로 검증 | 확정 | 002 |
 | D5 | 한글 타수 기준 (10-3) | 음절 기준 유지 | 확정: 음절 기준 | 002 |
@@ -167,18 +167,18 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
   - 구현 사항
     - 결정 기록 D1~D9 확정 후 이 문서 표와 PRD 10장에 반영 (D4는 Vitest 미도입으로 확정됨)
     - `@notionhq/client`를 정확한 버전으로 설치(D3), D1 채택 시 `server-only` 설치
-    - `.env.local`에 D2·D12 이름으로 노션 토큰·Passages data source ID·Lines data source ID 등록, `.env.example`(키만, 값 없음) 작성 시 `.gitignore`의 `.env*` 규칙에 `!.env.example` 예외 추가
+    - `.env`에 D2·D12 이름으로 노션 토큰·Passages data source ID·Lines data source ID 등록, `.env.example`(키만, 값 없음) 작성 시 `.gitignore`의 `.env*` 규칙에 `!.env.example` 예외 추가
     - 노션 측 준비(D12): PRD 5장대로 DB 2개 구성 — Passages(`Title`/`Language`/`Category`/`Order`/`Difficulty`/`Tags`/`Enabled`)와 Lines(`Text`/`Passage` 관계/`Line Number`/`Label`), 두 DB 모두 통합(Integration) 연결, "Copy data source ID"로 ID 2개 확보, 검증용 예문 등록(창세기 1장 31줄, 애국가 16줄과 `Label`, 영어 글 1편, 줄이 없는 예문 1편, `Enabled` 해제 예문 1편). 줄은 CSV import 권장
   - 수용 기준
     - [x] D1~D9가 "결정" 열에 기록되고 PRD 10장과 모순이 없다
     - [x] `package.json`에 `@notionhq/client`가 범위 지정자 없이 고정되어 있다
     - [x] 노션 토큰이 커밋 대상 파일 어디에도 없다(`git grep`으로 0건)
-    - [ ] 검증용 노션 DB 2개(Passages, Lines)와 예문 5종(Lines 행 포함)이 준비되어 있다 (사용자 수동 작업. Passages DB 생성됨, Lines DB와 행 입력 미완료)
+    - [x] 검증용 노션 DB 2개(Passages, Lines)와 예문 5종(Lines 행 포함)이 준비되어 있다 (사용자 수동 작업, 2026-10-05 사용자 확인)
     - [x] `npx tsc --noEmit`, `npm run lint` 통과
   - 테스트 체크리스트
-    - [x] 정적: `git grep`으로 토큰 문자열 0건, `.env.local`이 `git status`에 나타나지 않음
+    - [x] 정적: `git grep`으로 토큰 문자열 0건, `.env`이 `git status`에 나타나지 않음
     - [ ] 노션 API 연결(서버에서 data source 조회 1회 성공)은 Task 005 스파이크의 Playwright MCP 시나리오로 확인한다
-  - 테스트 결과: (2026-10-05) 정적 검증 통과 — `tsc`/`lint` 오류 0건, `git grep` 시크릿·노션 토큰 패턴 0건, `.env.local` 무시 확인, `@notionhq/client` 5.27.0·`server-only` 0.0.1 정확 고정, SDK 기본 API 버전 2025-09-03 확인. 노션 DB·예문 5종 준비와 `.env.local` 값 등록은 사용자 작업 대기 중이라 ✅ 보류
+  - 테스트 결과: (2026-10-05) 정적 검증 통과 — `tsc`/`lint` 오류 0건, `git grep` 시크릿·노션 토큰 패턴 0건, `.env` 무시 확인, `@notionhq/client` 5.27.0·`server-only` 0.0.1 정확 고정, SDK 기본 API 버전 2025-09-03 확인. 노션 DB·예문 5종 준비는 사용자가 완료했다고 확인(내용은 직접 검증하지 않음). `.env` 값 등록은 아직 안 되어 있어 노션 실연결은 Task 005에서 확인
 
 - **Task 003: 라우트 구조, 빈 페이지 골격 및 cacheComponents 설정**
   - 관련: F001, F003, F009 (골격), PRD 4장/6장

@@ -180,7 +180,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 
 ## 6. 노션 연동 명세
 
-- **목록 조회**: 공식 SDK(`@notionhq/client`)의 `dataSources.query`(`POST /v1/data_sources/{id}/query`)로 Passages DB의 프로퍼티만 가져온다. 환경 변수: `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`(Passages), `NOTION_LINES_DATA_SOURCE_ID`(Lines) (모두 서버 전용, `NEXT_PUBLIC_` 접두사 금지, 로컬은 `.env.local`). `@notionhq/client`는 `5.27.0`으로 정확히 고정해 설치했다. API 버전은 SDK 기본값(`2025-09-03`)을 쓰며, `2026-03-11`로 올려도 읽기 전용 앱이라 영향은 거의 없다. data source ID는 노션 DB 설정의 "Manage data sources" → "Copy data source ID"로 얻으며 DB ID와 서로 바꿔 쓸 수 없다. 두 DB 모두 통합(Integration)에 연결해야 한다. 조회 시 `filter_properties`로 필요한 프로퍼티만 받는다.
+- **목록 조회**: 공식 SDK(`@notionhq/client`)의 `dataSources.query`(`POST /v1/data_sources/{id}/query`)로 Passages DB의 프로퍼티만 가져온다. 환경 변수: `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`(Passages), `NOTION_LINES_DATA_SOURCE_ID`(Lines) (모두 서버 전용, `NEXT_PUBLIC_` 접두사 금지, 로컬은 `.env`). `@notionhq/client`는 `5.27.0`으로 정확히 고정해 설치했다. API 버전은 SDK 기본값(`2025-09-03`)을 쓰며, `2026-03-11`로 올려도 읽기 전용 앱이라 영향은 거의 없다. data source ID는 노션 DB 설정의 "Manage data sources" → "Copy data source ID"로 얻으며 DB ID와 서로 바꿔 쓸 수 없다. 두 DB 모두 통합(Integration)에 연결해야 한다. 조회 시 `filter_properties`로 필요한 프로퍼티만 받는다.
 - **본문 조회**: 타이핑 화면 진입 시 해당 예문의 줄을 Lines data source에서 `dataSources.query`로 가져온다. 필터는 `{ property: "Passage", relation: { contains: <예문 page id> } }`, 정렬은 `Line Number` 오름차순이며, `filter_properties`로 `Text`/`Line Number`/`Label`만 받는다. `has_more`/`next_cursor`로 전부 수집한다(한 번에 최대 100개). 목록 조회에서는 줄을 읽지 않는다. 페이지 본문 블록(`blocks.children.list`)은 사용하지 않는다.
 - **행 → 줄 변환**:
   - `Text`(title)의 plain text를 이어 붙여 7.2 정규화를 적용하고, `Label`(rich_text)의 plain text도 같이 정규화한다(비면 라벨 없음).

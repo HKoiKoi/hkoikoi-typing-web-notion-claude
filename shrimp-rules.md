@@ -55,7 +55,7 @@
 
 ## 노션 연동 표준
 
-- 환경 변수(서버 전용): `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID` (결정 D2 확정 전 잠정). **`NEXT_PUBLIC_` 접두사 금지**. 로컬 값은 `.env.local`
+- 환경 변수(서버 전용): `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID` (결정 D2 확정 전 잠정). **`NEXT_PUBLIC_` 접두사 금지**. 로컬 값은 `.env`
 - 목록: `dataSources.query` + `filter_properties` + `collectPaginatedAPI`. **서버 쿼리에 필터를 걸지 않는다** (`사용` 체크박스 포함 모두 매핑 단계에서 처리)
 - 본문: `blocks.children.list`(page id를 block id로 사용) + `collectPaginatedAPI`. 목록 조회에서 본문을 읽지 않는다
 - 블록 변환: `paragraph`의 `rich_text` plain text 연결 → `\n` 분리 → `normalizeLine` → `splitLabel` → 빈 줄 제거. 그 외 블록 타입은 건너뛰고 로그만 남긴다
@@ -123,7 +123,7 @@
    - API 연동·비즈니스 로직 Task: **Playwright MCP**로 시나리오(정상/오류/엣지, `도구 → 입력 → 기대 결과`) 수행
    - 공통 검증: 콘솔 오류 0건, 네트워크 응답·`outerHTML`에 노션 토큰 0건, 화면 수치가 기대값과 일치
    - 모두 통과해야 ✅ 처리. **실패한 채 ✅ 금지**
-5. 노션 오류 재현으로 `.env.local` 값을 바꿨다면 **반드시 원복**하고 정상 동작을 재확인한다
+5. 노션 오류 재현으로 `.env` 값을 바꿨다면 **반드시 원복**하고 정상 동작을 재확인한다
 6. 스크린샷은 커밋하지 않는다
 7. **Task 하나를 끝내면 중단하고 사용자의 다음 지시를 기다린다**
 8. 한글 IME 실입력은 Playwright로 재현 불가. 합성 이벤트는 보조 수단이며 macOS 실기기 수동 결과(Chrome·Safari·Firefox)를 대체하지 못한다 — 수동 검증 항목은 사용자에게 요청한다
@@ -160,5 +160,5 @@
 - ❌ 조합 중 `value` 강제 변경, 조합 중 오타/진행도 갱신, 이벤트 순서 가정
 - ❌ 영어 UI 문구, 폼 검증 라이브러리·인증 라이브러리 도입
 - ❌ `AGENTS.md` 상단 Next.js 경고 블록 삭제 (`next dev`가 다시 생성함)
-- ❌ `.env`, `.env.local`, `shrimp_data/` 커밋
+- ❌ `.env`, `shrimp_data/` 커밋
 - ❌ 테스트를 건너뛰거나 실패한 채 Task를 ✅ 처리

@@ -90,7 +90,7 @@ src/lib/notion/
 ### 클라이언트와 보안
 
 - 공식 SDK `@notionhq/client`를 사용합니다. `dataSources.*`를 지원하는 최신 버전인지 `package.json`/context7로 확인하고, 없으면 설치 전에 사용자에게 알립니다.
-- 토큰은 `NOTION_TOKEN` 환경변수. `import "server-only"`로 클라이언트 번들 유입을 차단하고 `NEXT_PUBLIC_` 접두사를 쓰지 않습니다. 토큰·DB ID·data source ID를 코드에 하드코딩하지 않으며(`.env.local`/환경변수), `.env*`가 `.gitignore`에 있는지 확인합니다. `.env.example`에는 키 이름만 적습니다.
+- 토큰은 `NOTION_TOKEN` 환경변수. `import "server-only"`로 클라이언트 번들 유입을 차단하고 `NEXT_PUBLIC_` 접두사를 쓰지 않습니다. 토큰·DB ID·data source ID를 코드에 하드코딩하지 않으며(`.env`/환경변수), `.env*`가 `.gitignore`에 있는지 확인합니다. `.env.example`에는 키 이름만 적습니다.
 
 ### 조회
 
