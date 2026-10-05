@@ -1,10 +1,10 @@
 import { connection } from "next/server";
 
 import { PassageErrorState } from "@/components/common/passage-error-state";
+import { PassageRetryButton } from "@/components/common/passage-retry-button";
 import { loadPassageSummaries } from "@/lib/passages/load";
 
 import { PassageBrowser } from "./passage-browser";
-import { PassageRetryButton } from "./passage-retry-button";
 
 /** 노션에서 예문 목록을 불러와 성공이면 목록을, 실패면 kind별 안내 화면을 보여준다. */
 export async function PassageListSection() {

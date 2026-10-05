@@ -5,7 +5,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { PassageScreen } from "./_components/passage-screen";
 
-export default function PassagePage({ params }: PageProps<"/passages/[id]">) {
+export default function PassagePage({
+  params,
+  searchParams,
+}: PageProps<"/passages/[id]">) {
   return (
     <Suspense
       fallback={
@@ -15,7 +18,7 @@ export default function PassagePage({ params }: PageProps<"/passages/[id]">) {
         </Container>
       }
     >
-      <PassageScreen params={params} />
+      <PassageScreen params={params} searchParams={searchParams} />
     </Suspense>
   );
 }

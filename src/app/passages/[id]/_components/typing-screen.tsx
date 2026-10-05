@@ -13,6 +13,10 @@ export function TypingScreen({
 }: {
   passage: Passage;
   mismatch?: boolean;
+  /** 다음 예문(없으면 목록) 이동 경로. Task 014에서 결과 화면 버튼에 사용한다. */
+  nextHref?: string;
+  /** 예문 목록 복귀 경로(필터 유지). Task 014에서 사용한다. */
+  listHref?: string;
 }) {
   const currentIndex = Math.min(PREVIEW_CURRENT_INDEX, passage.lines.length - 1);
   const currentLine = passage.lines[currentIndex];

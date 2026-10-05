@@ -34,8 +34,10 @@ import {
   getNotionClient,
   NotionConfigError,
 } from "@/lib/notion/client";
+import { getPassageLinesCached } from "@/lib/notion/passage-lines";
 import { getPassageSummariesCached } from "@/lib/notion/passages";
 import type {
+  Line,
   Passage,
   PassageErrorKind,
   PassageResult,
@@ -79,19 +81,24 @@ function classifyError(error: unknown): PassageErrorKind {
  * 프로덕션 `use cache` 경계를 지난 오류는 digest만 가진 일반 Error라 분류할 수 없다.
  * 그래서 실패 후 캐시 밖에서 data source 조회를 1회 시도해 code로 분류한다.
  * 사전 점검이 성공하면 원인은 일시 오류로 본다.
+ * target: 'passages'는 예문 DB, 'lines'는 줄 DB를 점검한다.
  */
-async function classifyByProbe(): Promise<PassageErrorKind> {
+async function classifyByProbe(
+  target: "passages" | "lines" = "passages",
+): Promise<PassageErrorKind> {
+  const label = target === "passages" ? "목록" : "줄";
   try {
-    const { passagesDataSourceId } = getDataSourceIds();
+    const { passagesDataSourceId, linesDataSourceId } = getDataSourceIds();
     await getNotionClient().dataSources.retrieve({
-      data_source_id: passagesDataSourceId,
+      data_source_id:
+        target === "passages" ? passagesDataSourceId : linesDataSourceId,
     });
     return "transient";
   } catch (error) {
     if (error instanceof NotionConfigError) return "config";
     const kind = classifyError(error);
     console.warn(
-      `[passages] 목록 사전 점검 실패: ${isNotionClientError(error) ? error.code : "unknown"} -> ${kind}`,
+      `[passages] ${label} 사전 점검 실패: ${isNotionClientError(error) ? error.code : "unknown"} -> ${kind}`,
     );
     return kind;
   }
@@ -123,18 +130,65 @@ export async function loadPassageSummaries(): Promise<
   } catch {
     const lastGood = getLastGood();
     if (lastGood) return { ok: true, data: lastGood };
-    return { ok: false, kind: await classifyByProbe() };
+    return { ok: false, kind: await classifyByProbe("passages") };
   }
 }
 
+// 예문별 마지막 성공 줄. 목록과 같은 이유로 globalThis에 둔다(best effort).
+const LINES_LAST_GOOD_KEY = "__passageLinesLastGood__";
+
+function getLinesLastGoodMap(): Map<string, Line[]> {
+  const store = globalThis as unknown as Record<string, Map<string, Line[]> | undefined>;
+  return (store[LINES_LAST_GOOD_KEY] ??= new Map());
+}
+
+/** 노션 page id 비교용 정규화: 대소문자 무시, 대시 제거 */
+function normalizeId(id: string): string {
+  return id.replace(/-/g, "").toLowerCase();
+}
+
 /**
- * 예문 한 편(줄 포함)을 조회한다. 구현은 Task 012.
- * 입력: 노션 page id. 목록에 없으면 notFound(Enabled 해제 포함), 줄이 0개이면 empty,
- * 환경 변수 누락·권한 오류는 config, 일시 오류는 transient.
+ * 예문 한 편(줄 포함)을 조회한다.
+ * 동작 요약
+ * 1. 환경 변수(Passages/Lines ID 포함) 누락이면 config.
+ * 2. 목록(loadPassageSummaries) 실패는 config/transient 그대로 전달, empty는 notFound로 변환.
+ * 3. 목록에서 id(대소문자 무시, 대시 제거)가 일치하는 요약을 찾는다. 없으면 notFound(Enabled 해제 예문 포함).
+ * 4. 줄 캐시 조회 성공 시 예문별 마지막 성공값을 갱신한다. 실패 시 마지막 성공값이 있으면 ok,
+ *    없으면 classifyByProbe('lines')로 config/transient 분류.
+ * 5. 줄이 0개이면 empty, 아니면 { ...요약, lines }를 ok로 반환한다.
  */
-export async function loadPassage(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Task 012 구현 전 스텁
-  _id: string,
-): Promise<PassageResult<Passage>> {
-  throw new Error("Task 012에서 구현");
+export async function loadPassage(id: string): Promise<PassageResult<Passage>> {
+  try {
+    getDataSourceIds();
+  } catch (error) {
+    if (error instanceof NotionConfigError) {
+      return { ok: false, kind: "config" };
+    }
+    throw error;
+  }
+
+  const summaries = await loadPassageSummaries();
+  if (!summaries.ok) {
+    return {
+      ok: false,
+      kind: summaries.kind === "empty" ? "notFound" : summaries.kind,
+    };
+  }
+
+  const target = normalizeId(id);
+  const summary = summaries.data.find((item) => normalizeId(item.id) === target);
+  if (!summary) return { ok: false, kind: "notFound" };
+
+  let lines: Line[];
+  try {
+    lines = await getPassageLinesCached(summary.id);
+    getLinesLastGoodMap().set(summary.id, lines);
+  } catch {
+    const lastGood = getLinesLastGoodMap().get(summary.id);
+    if (!lastGood) return { ok: false, kind: await classifyByProbe("lines") };
+    lines = lastGood;
+  }
+
+  if (lines.length === 0) return { ok: false, kind: "empty" };
+  return { ok: true, data: { ...summary, lines } };
 }
