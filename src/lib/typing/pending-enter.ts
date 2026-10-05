@@ -51,7 +51,7 @@ export function stepPendingEnter(
       };
 
     case "compositionend": {
-      // 보류된 Enter가 있으면 확정 값으로 판정한다. 없으면(Safari형 등) 판정하지 않는다.
+      // 보류된 Enter가 있으면 확정 값으로 판정한다. 없으면(compositionend가 Enter보다 먼저 온 경우 등) 판정하지 않는다.
       // Chrome(mac)은 이어서 비조합 Enter keydown을 한 번 더 보내므로 그 Enter를 무시하도록 표시한다.
       const action = state.pendingEnter ? judge(event.matches) : "none";
       return {
@@ -140,7 +140,7 @@ export const pendingEnterScenarios: readonly PendingEnterScenario[] = [
     expectedRejectCount: 0,
   },
   {
-    name: "Safari형 (compositionend → Enter)",
+    name: "compositionend 선행형 (compositionend → Enter)",
     events: [
       { kind: "compositionstart" },
       { kind: "compositionend", matches: true },
