@@ -1,14 +1,26 @@
-// 예문 목록 필터/정렬/다음 예문 시그니처 (PRD 6장 190행, D7). 구현은 Task 008.
+// 예문 목록 필터/정렬/다음 예문 시그니처 (PRD 6장 190행, D7). Task 008에서 구현.
 // 순수 함수 모듈: React/Next/노션 SDK에 의존하지 않는다.
-// 참고: `declare function`은 isolatedModules에서 값으로 export할 수 없어 throw 스텁으로 둔다.
-/* eslint-disable @typescript-eslint/no-unused-vars -- 구현 전 스텁이라 매개변수가 미사용이다. 구현 Task에서 이 줄을 제거한다. (`_` 접두사는 이 프로젝트 lint에서 경고가 해소되지 않음) */
 
-import type { PassageFilter, PassageSummary } from "@/types/passage";
+import type {
+  Difficulty,
+  Language,
+  PassageFilter,
+  PassageSummary,
+} from "@/types/passage";
 
 /** URLSearchParams / Next ReadonlyURLSearchParams가 구조적으로 만족하는 최소 형태 */
 export type SearchParamsLike = {
   get(name: string): string | null;
 };
+
+const LANGUAGES: readonly Language[] = ["ko", "en"];
+const DIFFICULTIES: readonly Difficulty[] = ["Easy", "Medium", "Hard"];
+
+function readParam(searchParams: SearchParamsLike, key: string): string | undefined {
+  const value = searchParams.get(key);
+  if (value === null || value.trim() === "") return undefined;
+  return value;
+}
 
 /**
  * URL 쿼리(`?category=&lang=&difficulty=&tag=`)를 PassageFilter로 변환한다.
@@ -16,8 +28,16 @@ export type SearchParamsLike = {
  * 엣지: 키가 없거나 빈 문자열이면 undefined. lang/difficulty가 허용 값(ko|en, Easy|Medium|Hard) 밖이면 undefined.
  * category/tag는 임의 문자열을 허용한다(존재하지 않는 값은 필터 결과 0건으로 처리).
  */
-export function parseFilter(_searchParams: SearchParamsLike): PassageFilter {
-  throw new Error("Task 008에서 구현");
+export function parseFilter(searchParams: SearchParamsLike): PassageFilter {
+  const lang = readParam(searchParams, "lang");
+  const difficulty = readParam(searchParams, "difficulty");
+
+  return {
+    category: readParam(searchParams, "category"),
+    lang: LANGUAGES.find((value) => value === lang),
+    difficulty: DIFFICULTIES.find((value) => value === difficulty),
+    tag: readParam(searchParams, "tag"),
+  };
 }
 
 /**
@@ -26,20 +46,48 @@ export function parseFilter(_searchParams: SearchParamsLike): PassageFilter {
  * 엣지: 정의되지 않은 조건은 무시, 모든 조건이 비면 전체 반환. tag는 tags 배열에 포함 여부로 판단한다.
  */
 export function filterPassages(
-  _passages: readonly PassageSummary[],
-  _filter: PassageFilter,
+  passages: readonly PassageSummary[],
+  filter: PassageFilter,
 ): PassageSummary[] {
-  throw new Error("Task 008에서 구현");
+  return passages.filter(
+    (passage) =>
+      (filter.category === undefined || passage.category === filter.category) &&
+      (filter.lang === undefined || passage.language === filter.lang) &&
+      (filter.difficulty === undefined ||
+        passage.difficulty === filter.difficulty) &&
+      (filter.tag === undefined || passage.tags.includes(filter.tag)),
+  );
+}
+
+function compareText(a: string, b: string): number {
+  return a.localeCompare(b, "ko");
 }
 
 /**
  * 분류(Category) -> 순서(Order) -> 제목(Title) 순으로 정렬한 새 배열을 반환한다(PRD 6장).
  * 엣지: Order가 없으면 Title로 비교한다. 원본 배열은 변경하지 않는다.
+ * Order가 있는 항목을 없는 항목보다 앞에 두고, 마지막에 id로 비교해 결과를 결정적으로 만든다.
  */
 export function sortPassages(
-  _passages: readonly PassageSummary[],
+  passages: readonly PassageSummary[],
 ): PassageSummary[] {
-  throw new Error("Task 008에서 구현");
+  return [...passages].sort((a, b) => {
+    const byCategory = compareText(a.category, b.category);
+    if (byCategory !== 0) return byCategory;
+
+    if (a.order !== undefined && b.order !== undefined) {
+      if (a.order !== b.order) return a.order - b.order;
+    } else if (a.order !== undefined) {
+      return -1;
+    } else if (b.order !== undefined) {
+      return 1;
+    }
+
+    const byTitle = compareText(a.title, b.title);
+    if (byTitle !== 0) return byTitle;
+
+    return compareText(a.id, b.id);
+  });
 }
 
 /**
@@ -48,8 +96,25 @@ export function sortPassages(
  * 출력: 다음 예문 id. currentId가 마지막이거나 목록에 없으면 null.
  */
 export function getNextPassageId(
-  _passages: readonly PassageSummary[],
-  _currentId: string,
+  passages: readonly PassageSummary[],
+  currentId: string,
 ): string | null {
-  throw new Error("Task 008에서 구현");
+  const index = passages.findIndex((passage) => passage.id === currentId);
+  if (index === -1) return null;
+  return passages[index + 1]?.id ?? null;
+}
+
+/**
+ * 값이 있는 조건만 `?category=&lang=&difficulty=&tag=` 형태로 직렬화한다.
+ * 조건이 하나도 없으면 빈 문자열을 반환한다.
+ */
+export function buildFilterQuery(filter: PassageFilter): string {
+  const params = new URLSearchParams();
+  if (filter.category) params.set("category", filter.category);
+  if (filter.lang) params.set("lang", filter.lang);
+  if (filter.difficulty) params.set("difficulty", filter.difficulty);
+  if (filter.tag) params.set("tag", filter.tag);
+
+  const query = params.toString();
+  return query === "" ? "" : `?${query}`;
 }
