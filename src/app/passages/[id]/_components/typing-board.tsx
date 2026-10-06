@@ -65,14 +65,13 @@ function PendingLines({ lines, from }: { lines: Line[]; from: number }) {
 
 /**
  * 완료 줄 / 현재 줄 / 남은 줄을 분리해 렌더한다.
- * 현재 줄 바로 아래에 입력 줄을 둔다. `inputProps`가 없으면 입력창은 읽기 전용이다.
+ * 현재 줄 바로 아래에 입력 줄을 두고, 입력창은 현재 줄 텍스트를 aria-describedby로 참조한다.
  * 줄이 바뀌면 현재 줄을 화면 세로 중앙 부근으로 스크롤한다(첫 렌더 제외).
  */
 export function TypingBoard({
   lines,
   currentIndex,
   currentStates,
-  inputValue,
   extraText,
   mismatch = false,
   inputProps,
@@ -82,12 +81,11 @@ export function TypingBoard({
   lines: Line[];
   currentIndex: number;
   currentStates: CharState[];
-  inputValue: string;
   extraText?: string;
   /** Enter 시 줄이 일치하지 않을 때 강조한다. */
   mismatch?: boolean;
-  /** useTypingSession의 inputProps. 없으면 읽기 전용 입력창을 보여 준다. */
-  inputProps?: UseTypingSessionResult["inputProps"];
+  /** useTypingSession의 inputProps. */
+  inputProps: UseTypingSessionResult["inputProps"];
   /** 불일치 Enter마다 바뀌는 값. 바뀔 때마다 입력 줄 흔들림을 재생한다. */
   shakeKey?: number;
   /** 보드 영역 클릭 시 호출(입력창 재포커스용). */
@@ -150,7 +148,7 @@ export function TypingBoard({
             // scroll-mt-16: 중앙 정렬 시 sticky 헤더(약 57px) 아래로 줄 상단이 가려지지 않게 한다.
             className="flex flex-col gap-2 scroll-mt-16 rounded-lg border-2 border-typing-current bg-muted/40 p-3"
           >
-            <div className="flex gap-3">
+            <div id="current-line-text" className="flex gap-3">
               <LineLabel label={currentLine.label} />
               <LineChars
                 text={currentLine.text}
@@ -161,7 +159,8 @@ export function TypingBoard({
             </div>
             <div ref={inputWrapRef} className="flex flex-col gap-1 pl-15">
               <Input
-                {...(inputProps ?? { readOnly: true, value: inputValue, "aria-label": "타이핑 입력" })}
+                {...inputProps}
+                aria-describedby="current-line-text"
                 onFocus={() => requestAnimationFrame(alignCurrentLine)}
                 aria-invalid={mismatch}
                 className={cn(

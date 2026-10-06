@@ -106,13 +106,17 @@ export async function PassageScreen({
 
   // 다음 예문: 목록 화면과 같은 필터·정렬 기준. 목록 조회가 실패하면(마지막 성공값 없음) 목록으로 보낸다.
   let nextHref = listHref;
+  let hasNext = false;
   const summaries = await loadPassageSummaries();
   if (summaries.ok) {
     const nextId = getNextPassageId(
       sortPassages(filterPassages(summaries.data, filter)),
       passage.id,
     );
-    if (nextId) nextHref = `/passages/${nextId}${query}`;
+    if (nextId) {
+      nextHref = `/passages/${nextId}${query}`;
+      hasNext = true;
+    }
   }
 
   return (
@@ -121,7 +125,12 @@ export async function PassageScreen({
         title={passage.title}
         description={`${passage.category} · ${passage.lines.length}줄`}
       />
-      <TypingScreen passage={passage} nextHref={nextHref} listHref={listHref} />
+      <TypingScreen
+        passage={passage}
+        nextHref={nextHref}
+        hasNext={hasNext}
+        listHref={listHref}
+      />
     </Container>
   );
 }

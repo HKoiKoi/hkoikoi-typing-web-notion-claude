@@ -18,12 +18,15 @@ function formatDuration(ms: number) {
 export function ResultView({
   result,
   nextHref,
+  hasNext = true,
   listHref,
   onRetry,
   focusHeading = false,
 }: {
   result: TypingResult;
   nextHref: string;
+  /** false면 다음 예문이 없으므로 [다음 예문] 버튼을 숨긴다(목록으로 버튼과 중복 방지). */
+  hasNext?: boolean;
   listHref: string;
   /** [다시 도전] 클릭 시 호출. 입력·타이머·줄 위치 초기화는 호출측이 한다. */
   onRetry?: () => void;
@@ -61,9 +64,11 @@ export function ResultView({
         <StatItem label="총 줄 수" value={result.lineCount} unit="줄" />
       </dl>
       <div className="flex flex-wrap gap-2">
-        <Button asChild>
-          <Link href={nextHref}>다음 예문</Link>
-        </Button>
+        {hasNext && (
+          <Button asChild>
+            <Link href={nextHref}>다음 예문</Link>
+          </Button>
+        )}
         <Button variant="outline" onClick={onRetry}>
           다시 도전
         </Button>

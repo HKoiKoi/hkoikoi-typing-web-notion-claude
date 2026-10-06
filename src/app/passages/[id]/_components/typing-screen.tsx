@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 
+import { Button } from "@/components/ui/button";
 import { useTypingSession } from "@/hooks/use-typing-session";
 import { toCodePoints } from "@/lib/typing/normalize";
 import { computeMetrics } from "@/lib/typing/metrics";
@@ -20,11 +22,14 @@ function countChars(text: string): number {
 export function TypingScreen({
   passage,
   nextHref,
+  hasNext,
   listHref,
 }: {
   passage: Passage;
   /** 다음 예문(없으면 목록) 이동 경로. 결과 화면 버튼에 쓴다. */
   nextHref: string;
+  /** 다음 예문이 있는지 여부. false면 결과 화면에서 [다음 예문]을 숨긴다. */
+  hasNext: boolean;
   /** 예문 목록 복귀 경로(필터 유지). 결과 화면 버튼에 쓴다. */
   listHref: string;
 }) {
@@ -64,6 +69,7 @@ export function TypingScreen({
       <ResultView
         result={result}
         nextHref={nextHref}
+        hasNext={hasNext}
         listHref={listHref}
         focusHeading
         onRetry={() => {
@@ -98,13 +104,30 @@ export function TypingScreen({
         lines={lines}
         currentIndex={state.lineIndex}
         currentStates={session.currentJudgement.states}
-        inputValue={state.buffer}
         extraText={extraText}
         mismatch={session.mismatch}
         shakeKey={session.shakeKey}
         inputProps={session.inputProps}
         onBoardClick={focusInput}
       />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            session.reset();
+            focusInput();
+          }}
+        >
+          처음부터
+        </Button>
+        <Button asChild variant="ghost">
+          <Link href={listHref}>목록으로</Link>
+        </Button>
+        <p className="text-sm text-muted-foreground">
+          Esc 키로도 처음부터 다시 시작할 수 있습니다.
+        </p>
+      </div>
     </div>
   );
 }
