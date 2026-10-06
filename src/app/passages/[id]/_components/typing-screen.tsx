@@ -19,14 +19,14 @@ function countChars(text: string): number {
 
 export function TypingScreen({
   passage,
-  nextHref = "/",
-  listHref = "/",
+  nextHref,
+  listHref,
 }: {
   passage: Passage;
   /** 다음 예문(없으면 목록) 이동 경로. 결과 화면 버튼에 쓴다. */
-  nextHref?: string;
+  nextHref: string;
   /** 예문 목록 복귀 경로(필터 유지). 결과 화면 버튼에 쓴다. */
-  listHref?: string;
+  listHref: string;
 }) {
   const session = useTypingSession(passage.lines);
   const { state, focusInput } = session;

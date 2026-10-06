@@ -22,8 +22,7 @@ const DIFFICULTIES: readonly Difficulty[] = ["Easy", "Medium", "Hard"];
 
 type SkipReason = "empty-title" | "invalid-language";
 
-// 아래 헬퍼는 passages.ts 스파이크 코드와 같은 패턴이다.
-// passages.ts는 /dev/notion-cache가 쓰므로 수정하지 않고 중복을 허용한다(스파이크 코드는 Task 018에서 제거).
+// 프로퍼티를 이름으로 찾고 타입이 다르면 빈 값을 반환하는 접근 헬퍼
 function getTitle(prop: PropertyValue | undefined): string {
   return prop?.type === "title"
     ? prop.title.map((t) => t.plain_text).join("")
