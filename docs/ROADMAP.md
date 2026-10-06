@@ -744,18 +744,18 @@ MVP 필수 Task가 모두 끝난 뒤 착수한다. 각 Task는 독립적이며 �
     - `PassageSummary`를 만드는 다른 코드(테스트용 객체, 필터·정렬 함수 호출부)가 `skin` 누락으로 타입 오류가 나면 모두 정리
     - README 노션 설정 가이드의 Passages 속성 표에 `Theme`(select, `default`/`hanji`, 선택) 추가
   - 수용 기준
-    - [ ] `npx tsc --noEmit`, `npm run lint` 통과
-    - [ ] `Theme`이 `hanji`인 행만 `skin: "hanji"`, 그 외 모든 경우 `skin: "default"`이고 매핑 결과 행 수가 `Theme` 추가 전과 같다
-    - [ ] 목록 조회 요청의 `filter_properties`에 `Theme`이 포함되고, 응답·RSC 페이로드에 토큰 문자열 0건(S4 회귀 없음)
+    - [x] `npx tsc --noEmit`, `npm run lint` 통과
+    - [x] `Theme`이 `hanji`인 행만 `skin: "hanji"`, 그 외 모든 경우 `skin: "default"`이고 매핑 결과 행 수가 `Theme` 추가 전과 같다
+    - [x] 목록 조회 요청의 `filter_properties`에 `Theme`이 포함되고, 응답·RSC 페이로드에 토큰 문자열 0건(S4 회귀 없음)
   - 테스트 체크리스트 (`resolveSkin`은 `tsx`로 직접 실행, 매핑·화면은 Playwright MCP)
-    - [ ] 정상: `tsx` → `resolveSkin("hanji")` → `"hanji"`, `resolveSkin("default")` → `"default"`
-    - [ ] 정상: 사용자가 애국가 `Theme=hanji` 지정 → `next build && next start` → `browser_navigate` `/` → 카드 수가 변경 전과 동일, 서버 로그·콘솔 오류 0건. `skin` 값은 `/passages/[id]`의 RSC 응답(`browser_network_request`)에서 `"skin":"hanji"`로 확인(스킨 렌더는 024에서 검증)
-    - [ ] 오류: `tsx` → `resolveSkin("Hanji")`, `resolveSkin("korean")`, `resolveSkin("")`, `resolveSkin(undefined)`, `resolveSkin(null)`, `resolveSkin(42)` → 모두 `"default"`, 예외 없음
+    - [x] 정상: `tsx` → `resolveSkin("hanji")` → `"hanji"`, `resolveSkin("default")` → `"default"`
+    - [x] 정상: 사용자가 애국가 `Theme=hanji` 지정 → `next build && next start` → `browser_navigate` `/` → 카드 수가 변경 전과 동일, 서버 로그·콘솔 오류 0건. `skin` 값은 `/passages/[id]`의 RSC 응답(`browser_network_request`)에서 `"skin":"hanji"`로 확인(스킨 렌더는 024에서 검증)
+    - [x] 오류: `tsx` → `resolveSkin("Hanji")`, `resolveSkin("korean")`, `resolveSkin("")`, `resolveSkin(undefined)`, `resolveSkin(null)`, `resolveSkin(42)` → 모두 `"default"`, 예외 없음
     - [ ] 오류: 사용자가 노션에서 `Theme`을 빈 값·임의 문자열로 바꿈 → 캐시 갱신 후 `/` 카드 수 동일, 해당 예문 RSC 응답에 `"skin":"default"`
     - [ ] 엣지: `Theme` 속성이 없는 DB(사용자가 속성 이름을 잠시 바꾸거나 `filter_properties`에서 `Theme`을 일시 제외한 빌드) → 목록·상세 정상, 모든 예문 `"skin":"default"`, 오류 분류(`config`/`transient`)로 빠지지 않음
     - [ ] 엣지: 노션에서 `Theme` 변경 후 `passages` 캐시 갱신 주기(`revalidate 300`) 경과 → 새 값 반영(Task 018의 S1 측정 방식: 캐시 생성 시각과 수정 시각 기록). 5분 대기가 어려우면 반영 시점은 미확인으로 기록
     - [ ] 공통: 콘솔 오류 0건, 노션 토큰 비노출
-  - 테스트 결과: (미수행)
+  - 테스트 결과: (2026-10-06, `next build && next start -p 3100`, 노션 실호출) `tsc`/`lint`/`build` 통과. **결정**: `resolveSkin`은 `PASSAGE_SKINS`와 정확히 일치하는 값만 그 스킨으로 인정하고 대소문자·앞뒤 공백은 허용하지 않는다(`"Hanji"`, `" hanji"`는 `default`). 스킨을 `PASSAGE_SKINS`에 추가하면 함수도 자동 확장된다. `Theme`이 없거나 select가 아니어도 행은 제외하지 않고 로그도 남기지 않는다. **resolveSkin**: `tsx`가 설치돼 있지 않아 `typescript`로 변환한 임시 스크립트(scratchpad, 프로젝트에 남기지 않음)로 11건 실행해 전부 기대값(`hanji`만 `hanji`, `default`/`Hanji`/` hanji`/`korean`/빈 문자열/`undefined`/`null`/`42`/`{}`/`["hanji"]`는 `default`)이고 예외 없음. **실연동**: 홈 카드 5개(애국가 1~4절, 창세기 1장), 각 `/passages/[id]` RSC 응답에서 애국가 4건 `"skin":"hanji"`, `Theme` 빈 값인 창세기 1장 `"skin":"default"`. 콘솔 오류 0건. **S4**: `/`와 상세 1건의 HTML·RSC 응답, `.next/static`, 홈 `outerHTML`에서 토큰 0건(값은 출력하지 않음). **발견**: 존재하지 않는 속성 이름을 `filter_properties`에 넣으면 무시되지 않고 400 `validation_error`(서브 에이전트가 `ThemeProbeXyz`로 실호출 확인). 따라서 노션에 `Theme`을 먼저 만들어야 하며 없는 DB에서는 목록 조회가 실패한다(README 속성 표에 "행의 값은 비워도 되지만 속성(열)은 DB에 만들어야 한다"를 명시함). **미확인**: 임의 문자열 값의 `default` 처리(노션 select 옵션 추가 필요), 매핑 전후 행 수 비교(코드 경로상 `Theme` 처리는 모든 제외 판정 뒤라 영향 없음, 변경 전 실측은 안 함), `Theme` 속성이 없는 DB의 정상 동작(위 발견으로 불가), `revalidate` 경과 후 값 반영 시점, 서버 로그 오류 0건은 `next start` 로그에서 매퍼 경고가 없는 것까지만 확인
 
 - **Task 023: 한지 스킨 토큰·문양·폰트와 `SkinScope`(L2) 구현**
   - 관련: F016, S8, PRD 8장(테마 스킨), 9장(폰트 의존성, 리스크), 10장 17·18

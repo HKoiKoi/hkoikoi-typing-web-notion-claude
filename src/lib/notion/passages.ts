@@ -16,6 +16,7 @@ const PASSAGE_PROPERTY_NAMES = [
   "Difficulty",
   "Tags",
   "Enabled",
+  "Theme",
 ];
 
 /**
