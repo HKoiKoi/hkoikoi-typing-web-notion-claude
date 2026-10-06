@@ -79,14 +79,15 @@
 - **컴포넌트 4계층, 단방향 import**: L1 `src/components/ui/`(shadcn, `npx shadcn@latest add <name>`으로만 추가) → L2 `src/components/common/` → L3 `src/components/layout/` → L4 `src/app/`. 상위 계층은 하위 계층만 import.
 - **페이지 전용 컴포넌트 위치**: 한 페이지에서만 쓰는 조합 컴포넌트(예: `PassageCard`, `TypingBoard`)는 L4 라우트 안의 private 폴더(`src/app/_components/`, `src/app/passages/[id]/_components/`)에 둔다. 두 페이지 이상에서 쓰는 것(예: `PassageErrorState`)만 L2로 올린다.
 - **로직 위치**: 순수 함수는 `src/lib/`(UI/React 비의존), 노션 접근은 `src/lib/notion/`(서버 전용), 훅은 `src/hooks/`(만들기 전 usehooks-ts 확인).
-- **개발 전용 라우트**: `src/app/dev/*`는 검증용이며 프로덕션에서는 `notFound()`로 막는다. Task 018에서 제거 또는 비노출을 확인한다.
+- **개발 전용 라우트**: `src/app/dev/*`, `src/lib/mock/`, `src/lib/notion/dev-probe.ts`는 Task 018에서 제거했다. 임시 검증용 코드는 같은 Task 안에서 지운다.
 - **사이트 정보 단일 소스**: `src/config/site.ts`의 `siteConfig`.
 - **React Compiler 활성화**: 수동 `useMemo`/`useCallback` 불필요.
 - **문구**: 문서와 UI 문구는 한국어.
 - **PRD의 `/components` 쇼케이스 반영 규칙**은 쇼케이스 라우트가 스타터 정리(Task 001)에서 삭제되었으므로 적용하지 않는다.
 
-## 현재 상태 (2026-10-05 기준)
+## 현재 상태 (2026-10-06 기준)
 
+- **MVP 필수 Task(001~018) 구현·검증 완료. 다음은 선택 Task 019·020.** Task 018은 사용자가 건너뛴 항목(S2 수동 표, 스크린리더, 실기기 Performance) 때문에 ✅를 보류했다(아래 Task 018 참고). 아래 목록은 Task별 산출물 이력이며, 이력에 나오는 `/dev/*`·`src/lib/mock`·`dev-probe.ts`·`dummy-states.ts`·스파이크 `lines.ts`는 Task 018에서 제거되어 더 이상 없다.
 - 완료: Phase 0(Task 001, commit `5b0868c`)과 Phase 1의 Task 002~006 전부, Phase 2의 Task 007~009, Phase 3의 Task 010. 다음 Task: 011(노션 데이터 연동)과 013(입력 엔진 훅)은 서로 병렬로 시작할 수 있다
 - 이미 존재하여 다시 만들지 않는 것
   - 설정/의존성: `next.config.ts`의 `cacheComponents: true`, `@notionhq/client` `5.27.0`과 `server-only` `0.0.1`(둘 다 정확 고정), `.env.example`의 노션 키 3종(`NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`, `NOTION_LINES_DATA_SOURCE_ID`), `siteConfig.nav`는 "예문 목록" 한 항목
@@ -97,7 +98,6 @@
   - 라우트 골격: 홈(`/`)은 `PageHeader` + `Suspense`로 감싼 `PassageListSection`(Task 011에서 노션 연동, Task 008 당시에는 더미 데이터의 `PassageBrowser`). `/passages/[id]`는 `page.tsx`(params를 `Suspense` 안에서 해석), `_components/passage-placeholder.tsx`, `loading.tsx`, `not-found.tsx`
   - 타입과 계약(Task 006, 시그니처만 있고 본문은 `throw` 스텁. `filter.ts`는 Task 008에서 구현 완료): `src/types/passage.ts`, `src/types/typing.ts`, `src/lib/typing/{normalize,judge,metrics,truncate}.ts`(구현 Task 010), `src/lib/passages/load.ts`(구현 Task 011, 012). 스텁 파일마다 있는 `eslint-disable` 한 줄은 구현 Task에서 제거
   - 스파이크 산출물(Task 004, 005): `src/lib/typing/pending-enter.ts`(Task 013에서 재사용), `src/lib/notion/client.ts`·`passages.ts`·`lines.ts`(Task 011의 출발점, Lines 본문 프로퍼티명 `Text`와 D11 대응책 반영 필요), `src/lib/notion/dev-probe.ts`와 개발 전용 라우트 `/dev/ime-log`, `/dev/notion-cache`(+`probe/route.ts`)는 Task 018에서 제거 또는 비노출 확인
-- 아직 없는 것: 노션 행 → `PassageSummary`/`Line` 매핑(`mappers.ts`), 판정·필터·정렬·래퍼 실제 구현, `src/hooks/` 내용(`.gitkeep`뿐), `/dev/typing-lab`, 예문 목록·타이핑·결과·오류 UI
 - 미확인으로 남은 것: Task 004 수동(선택) `suppressEnter` 수정 후 macOS 한글 IME 실입력 재확인, Task 003의 다크 모드·스크린샷 시각 확인
 - Task 007 산출물: 판정 토큰 `--typing-*` 7종(`globals.css`), 더미 데이터 `src/lib/mock/passages.ts`(목록 참조는 Task 011에서 제거, 파일 삭제는 `/dev/typing-ui`가 쓰므로 Task 018), 임시 미리보기 `/dev/typing-tokens`(Task 018에서 제거)
 - Task 008 산출물: `src/lib/passages/filter.ts` 구현(`parseFilter`, `filterPassages`, `sortPassages`, `getNextPassageId`, `buildFilterQuery`), `src/app/_components/`의 `passage-card.tsx`·`passage-filters.tsx`·`passage-browser.tsx`·`passage-list-skeleton.tsx`, 홈(`/`)과 `loading.tsx` 통합(더미 데이터는 Task 011에서 노션 데이터로 교체), 개발 전용 `/dev/passage-list`(Task 018에서 제거)
@@ -110,7 +110,7 @@
 - Task 015 산출물: 코드 변경은 줄 전환 직후 오판 수정뿐(`src/lib/typing/session.ts`의 `lastAdvanceAt`·`STRAY_ENTER_WINDOW_MS`·`repeat` 처리, `use-typing-session.ts`가 `e.repeat` 전달, `/dev/typing-session` 케이스 28건). 나머지는 검증 결과 기록. 이월 항목은 Task 016(HTTP 200 not-found, 결과 뷰 유지)·017(예문 화면의 이전 목록 링크, 스크롤 실기기)·018(S1 stale 순서 재확인)에 추가
 - Task 016 산출물: `src/components/common/passage-retry-button.tsx`(`label` prop, `useTransition`으로 재조회 중 비활성화), `passage-error-state.tsx`(config 설명), `src/app/_components/passage-list-section.tsx`·`passages/[id]/_components/passage-screen.tsx`(config·0건·본문 없음에 [다시 확인] 주입), `passages/[id]/not-found.tsx`(`PassageErrorState` 사용), `src/app/error.tsx`(`retry` + [예문 목록으로], `reset` 미사용), `passage-browser.tsx`(도달 불가 분기 제거). 결정: HTTP 200 not-found 허용(`noindex`), 결과 뷰 복원은 `<Activity>` 보존으로 의도된 동작. 이월 항목은 Task 017(숨겨진 목록 화면의 `h1`이 뒤로 가기 후 DOM에 남음, `EmptyState` 제목이 `h3`라 헤딩 레벨이 건너뜀)에 추가
 - Task 017 산출물: 측정 중심 Task로 코드 변경은 결함 수정뿐. `typing-board.tsx`(완료 줄 `opacity-60` 제거, 현재 줄 `scroll-mt-16`, `CompletedLines`/`PendingLines` 분리로 입력 중 완료·남은 줄 재렌더 0건), `typing-stats.tsx`(`Progress`에 `aria-valuenow`·`aria-valuetext`), `empty-state.tsx`(제목 `h3`→`h2`), `passage-retry-button.tsx`(`aria-disabled`로 포커스 유지, 숨김 `role="status"` 안내), `passage-card.tsx`(포커스 링 `ring-foreground/60`). 대비 4.5:1·키보드 E2E·S3(최대 56ms, Long Task 0건)는 통과, 미확인·이월은 Task 018 구현 사항의 "Task 017 이월" 참조
-- 다음은 Task 018
+- Task 018 산출물: 코드는 정리 위주. `src/app/dev/`(7개 라우트), `dev-probe.ts`, 스파이크 `lines.ts`와 `passages.ts`의 스파이크 export, `src/lib/mock/`, 틀린 토큰 더미 모드(`client.ts`) 삭제. `TypingScreen`의 `nextHref`/`listHref` required화. `EmptyState`·`PassageErrorState`에 `headingLevel`(1|2, 기본 2) 추가 후 예문 상세 오류·빈 상태·없는 예문, `error.tsx`, 루트 `not-found.tsx`에 `h1` 적용. README에 노션 설정 가이드 추가. `src/proxy.ts`는 `/passages` 깨진 % 경로 404용이라 유지. 결과는 아래 Task 018 테스트 결과 참조
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -538,7 +538,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
 ### Phase 4: 마무리 (오류 상태, 접근성, 다크모드, 최종 검증)
 
 **목표**: 오류/엣지 케이스, 접근성, 다크모드 대비, 성능을 다듬고 S1~S7 전체를 최종 검증한다.
-**Phase 완료 조건**: Task 018에서 S1~S7 전 항목 통과 기록.
+**Phase 완료 조건**: Task 018에서 S1~S7 전 항목 통과 기록. (Task 018 결과: S1·S3~S7 기록, S2 수동 표와 실기기 확인은 미확인으로 남음)
 
 - **Task 016: 오류·빈 상태와 복구 플로우 완성 ✅**
   - 관련: F009, S6
@@ -646,7 +646,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     **변경 파일**: `typing-board.tsx`(opacity 제거·`scroll-mt-16`·줄 묶음 분리), `typing-stats.tsx`, `empty-state.tsx`, `passage-retry-button.tsx`, `passage-card.tsx`.
     **미확인·이월**: ① 실제 모바일 가상 키보드(iOS `visualViewport` 축소·주소창 변화)와 실기기 smooth 스크롤은 layout viewport 축소(375×340)로만 간접 확인. ② 스크린리더 실제 낭독은 접근성 트리·DOM으로만 확인(재조회 성공 후 화면이 바뀔 때의 안내는 확인 못함). ③ DevTools Performance 프로파일과 노트북 실기기 값은 미측정(헤드리스 60Hz 계측). ④ Safari·Firefox는 PRD 7.3 제외. ⑤ 예문 상세의 오류·빈 상태·없는 예문 화면에는 `h1`이 없고 `h2`뿐(`error.tsx`도 동일). ⑥ Select·입력창·버튼의 포커스 `ring` 단독 대비 1.5~1.9, 입력창 기본 테두리 2.50(라이트)은 shadcn 기본값. ⑦ config·transient·`error.tsx`의 대비는 동일 토큰으로 갈음. **운영 메모**: 검증 서버(3100·3101)는 재빌드마다 `lsof`로 PID를 지정해 종료·재기동했고 마지막에 정리했다. 3101 서버는 `NOTION_TOKEN=invalid-token-for-a11y-check` 환경 변수만 덮어썼다(`.env` 불수정, `git status`에 `.env` 없음).
 
-- **Task 018: 최종 검증 및 배포 준비**
+- **Task 018: 최종 검증 및 배포 준비** (✅ 보류: S2 수동 표·스크린리더·실기기 Performance 미확인, 나머지 완료)
   - 관련: S1~S7 전체, F008
   - 의존: 016, 017
   - 구현 사항
@@ -658,17 +658,17 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - Task 017 이월: 예문 상세의 오류·빈 상태·없는 예문 화면에 `h1`이 없고 `h2`뿐이므로 필요하면 정리, Select·입력창·버튼 포커스 `ring` 단독 대비(1.5~1.9)와 입력창 기본 테두리 2.50(shadcn 기본값) 처리 여부 결정, 재조회 성공 후 화면이 바뀔 때의 스크린리더 안내 확인, 실기기 모바일 가상 키보드·스크린리더·DevTools Performance 프로파일 확인, `/dev/*` 제거 후 `passage-error-state.tsx`·`error.tsx`·재조회 버튼 문구 최종 점검
     - Task 015 이월: S1의 "새로고침 1회째 이전 데이터, 2회째 갱신 데이터" 순서를 정확한 캐시 생성 시각과 노션 수정 시각을 기록해 재확인(015에서는 1회째부터 갱신 데이터가 나옴), S2 겹받침/이중모음/빠른 연타별 수동 표 확보
   - 수용 기준
-    - [ ] S1~S7 전 항목 통과 기록
-    - [ ] `npx tsc --noEmit`, `npm run lint` 통과
-    - [ ] 저장소에 토큰/비밀값 없음
+    - [ ] S1~S7 전 항목 통과 기록 (S2는 수동 표 미확보로 구두 확인만, S3는 헤드리스 계측만 — 아래 결과 참조)
+    - [x] `npx tsc --noEmit`, `npm run lint` 통과
+    - [x] 저장소에 토큰/비밀값 없음
   - 테스트 체크리스트 (Playwright MCP, 프로덕션 모드)
-    - [ ] 정상: `npm run build && npm run start` 후 S1~S7 시나리오 순서대로 실행, 항목별 통과 여부 기록
-    - [ ] 정상: 전체 플로우 1회(목록 → 완주 → 결과 → 다음 예문)
-    - [ ] 오류: 오류 시나리오(토큰 오류, 빈 DB, 네트워크 오류) 재확인
-    - [ ] 엣지: `/dev/ime-log`, `/dev/typing-lab` 접근 시 404(또는 제거 확인)
-    - [ ] S4: 프로덕션 빌드 산출물과 네트워크 응답에서 토큰 0건, `git grep` 0건
-    - [ ] 공통: 콘솔 오류 0건
-  - 테스트 결과: (미수행)
+    - [ ] 정상: `npm run build && npm run start` 후 S1~S7 시나리오 순서대로 실행, 항목별 통과 여부 기록 (S2 수동 표 미확보)
+    - [x] 정상: 전체 플로우 1회(목록 → 완주 → 결과 → 다음 예문)
+    - [x] 오류: 오류 시나리오(토큰 오류, 빈 DB, 네트워크 오류) 재확인
+    - [x] 엣지: `/dev/ime-log`, `/dev/typing-lab` 접근 시 404(또는 제거 확인) (제거 확인, 프로덕션 HTTP 404)
+    - [x] S4: 프로덕션 빌드 산출물과 네트워크 응답에서 토큰 0건, `git grep` 0건
+    - [x] 공통: 콘솔 오류 0건 (검증한 페이지·시나리오 기준, 의도한 404 리소스 로드 1건 제외)
+  - 테스트 결과: (2026-10-06, `next build && next start`, 노션 실호출, 기준선 Passages 7행) **정적**: `tsc`/`lint`/`build` 통과, 빌드 로그에 노션 호출 없음, 라우트는 `/`·`/passages/[id]`만 남음, `dev`·`mock`·`dev-probe`·`NOTION_SPIKE_PROBE`·`dummy-states` grep 0건. **엣지**: `/dev/ime-log`·`/dev/typing-lab` HTTP 404, 없는 경로 404, 없는 예문은 HTTP 200(스트리밍, 허용 결정 유지). **S5·S7**: 창세기 1장 31줄 완주, 줄마다 현재 줄이 viewport 안(31/31), 결과(정확도 100·오타 0·31줄)로 포커스 이동, [다음 예문]이 The Road Not Taken(10줄)으로 이동. **S3**(헤드리스 60Hz): 1600타 주입에서 입력 이벤트 최대 56ms, Long Task 0건. **S4**: 토큰(길이 50)을 git 추적 파일·작업 트리·git 히스토리·`.next` 전체·`/`·상세·없는 예문의 HTML/RSC 응답에서 검색해 모두 0건, 브라우저에서 노션 도메인 요청 0건, `.env` gitignore. **S6**: 틀린 토큰(3101) → 목록·상세 '노션 연결 설정을 확인해 주세요' + [다시 확인](로그 `unauthorized -> config`), 네트워크 차단(3102, `HTTPS_PROXY`+`NODE_USE_ENV_PROXY=1`) → '예문을 불러오지 못했습니다' + [다시 시도](`unknown -> transient`), 빈 DB(사용자가 `Enabled` 7행 전부 해제) → '표시할 예문이 없습니다 / 노션 DB에 예문 행을 추가하세요' + [다시 확인], 상세는 '예문을 찾을 수 없습니다'. 상세 오류 화면 4종과 404에서 `h1` 확인. **D11 폴백(재현)**: 토글 가능한 로컬 CONNECT 프록시를 `HTTPS_PROXY`로 지정한 서버에서, 목록 캐시 생성(12:28:08) 353초 뒤 차단하자 조회는 실패(로그 '목록 조회 실패'·'줄 조회 실패')했지만 목록 7개와 창세기 줄이 마지막 성공값으로 표시됨. **`retry()` 성공 경로**: 차단 중 [다시 시도] → '확인하는 중' → '아직 불러오지 못했습니다'(콘솔 오류 0건), 차단 해제 후 같은 버튼으로 서버 재시작 없이 카드 7개 복구. **행 추가 후 반영 시점**: 빈 목록 캐시 생성 12:34:54, 사용자가 1행 체크 12:36:21, 첫 반영 12:39:41~12:40:02 사이(캐시 생성 약 305~308초 뒤, `revalidate 300`과 일치). **S1 순서 재확인**: 목록 캐시 생성 12:41:05, 사용자 제목 수정 12:45:20, 캐시 경과 259~262초 요청 3회는 이전 제목, 310초 경과한 12:46:15의 첫 요청부터 새 제목. PRD의 '1회째 이전·2회째 갱신' 순서는 Task 015에 이어 재현되지 않아 PRD S1 문구를 실측대로 정정(캐시 생성 5분 경과 후 첫 요청부터 갱신). **수동(사용자 보고)**: 모바일 실기기 가상 키보드 '잘 됨'(기기·수치 없음, 구두). 노션 데이터는 모두 원복(7행 `Enabled` 체크, 제목 원래대로)했고 새 서버에서 확인. **결정**: ① 예문 상세 오류·빈 상태에 `h1` 부여(`headingLevel` prop), 목록 화면은 `PageHeader`의 `h1` 아래 `h2` 유지 ② shadcn 포커스 `ring`·입력창 테두리 대비는 유지(`ui/` CLI 전용, 대안은 `--ring`·`--input` 토큰 조정) ③ 재조회 성공 후 `h1` 포커스 이동은 MVP 이후로 이월 ④ `src/proxy.ts` 유지 ⑤ 없는 예문 HTTP 200 유지. **미확인(사용자가 건너뜀 또는 불가)**: S2 겹받침(닭, 읽)·이중모음(왜, 의)·빠른 연타별 수동 표(이전 Task의 구두 확인만), 스크린리더(VoiceOver 등) 실제 낭독과 재조회 성공 후 화면 전환 안내, 실기기·DevTools Performance 프로파일(헤드리스 값만), 빈 목록 화면의 브라우저 콘솔(curl 확인), Safari·Firefox(PRD 7.3 제외). **운영 메모**: 검증 서버(3100~3103)와 프록시(3199)는 PID로 종료했고 `.env`는 수정하지 않았다(`git status`에 `.env` 없음)
 
 ### 선택 기능 (MVP 안에서 여유 시, Phase 4 이후)
 

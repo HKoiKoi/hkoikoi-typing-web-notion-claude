@@ -37,8 +37,7 @@
 | 타이핑 순수 함수 | `src/lib/typing/` (`normalize.ts`, `judge.ts`, `metrics.ts`, `truncate.ts`) | React/Next/DOM 전역/노션 SDK 사용 금지 |
 | 타입 | `src/types/passage.ts`, `src/types/typing.ts` | PRD 5장 개념 타입과 1:1 |
 | 훅 | `src/hooks/` | 만들기 전에 usehooks-ts에 있는지 확인 |
-| 더미 데이터 | `src/lib/mock/passages.ts` | Phase 2 전용. Task 011에서 실데이터로 교체 후 참조 제거 |
-| 개발 전용 라우트 | `src/app/dev/*` | **프로덕션에서 `notFound()`**. Task 018에서 제거/비노출 확인 |
+| 개발 전용 검증 코드 | (없음) | `src/app/dev/*`, `src/lib/mock/`, `src/lib/notion/dev-probe.ts`는 Task 018에서 제거했다. 임시 검증용 라우트·더미 데이터를 다시 두면 같은 Task 안에서 지운다 |
 
 - 경로 alias `@/*` → `src/*` 만 사용한다. 상대경로로 `src/` 밖을 가리키지 않는다.
 
@@ -106,7 +105,7 @@
 | `siteConfig.nav` | `MainNav`/`MobileNav`가 참조하는지 확인. 현재 `Home`은 Task 003에서 `예문 목록`(`/`)으로 변경 예정 |
 | 라우트 추가/삭제 | `README.md` "주요 페이지", `docs/PRD.md` 4장, `docs/ROADMAP.md` |
 | 환경 변수 추가/이름 변경 | `.env.example`(키만, 값 없음), `src/lib/notion/` 환경 검증 코드, `docs/PRD.md` 6장, `docs/ROADMAP.md` 결정 기록 D2 |
-| 새 판정 상태(`CharState`) 추가 | `src/types/typing.ts`, `src/lib/typing/judge.ts`, `line-chars.tsx`, `globals.css` 토큰(라이트·다크 둘 다), `/dev/typing-lab` 케이스 |
+| 새 판정 상태(`CharState`) 추가 | `src/types/typing.ts`, `src/lib/typing/judge.ts`, `line-chars.tsx`, `globals.css` 토큰(라이트·다크 둘 다) |
 | 노션 프로퍼티 추가/변경 | `src/types/passage.ts`, `src/lib/notion/mappers.ts`, `filter_properties` 목록, `docs/PRD.md` 5장 |
 | 결정 기록(D1~D11) 확정 | `docs/ROADMAP.md` 결정 기록 표 **와** `docs/PRD.md` 10장 모두 반영 |
 | 패키지/스택/명령 변경 | `CLAUDE.md` Stack·Commands, `README.md`, `docs/PRD.md` 9장 |
@@ -154,7 +153,7 @@
 - ❌ 서버 쿼리 필터 사용, 오류 결과를 `'use cache'` 안에서 반환
 - ❌ `error.message` 문자열로 오류 종류 분기
 - ❌ 수동 `useMemo`/`useCallback`, `tailwind.config.*` 생성
-- ❌ Vitest/Jest 등 테스트 러너 도입 (순수 함수 검증은 `/dev/typing-lab` + Playwright MCP, 결정 D4)
+- ❌ Vitest/Jest 등 테스트 러너 도입 (순수 함수 검증은 `tsx` 임시 스크립트 + Playwright MCP, 결정 D4)
 - ❌ 별도 `tasks/` 작업 파일 생성 (Task 명세는 `docs/ROADMAP.md`에 직접 작성)
 - ❌ 로그인/DB/랭킹/설정 화면 등 PRD "MVP 제외" 항목 구현
 - ❌ 조합 중 `value` 강제 변경, 조합 중 오타/진행도 갱신, 이벤트 순서 가정
