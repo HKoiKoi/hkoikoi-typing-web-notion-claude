@@ -109,7 +109,8 @@
 - Task 014 산출물: `src/app/passages/[id]/_components/typing-screen.tsx`(`"use client"`, `useTypingSession` 연결, `finished`에서 `ResultView`, [다시 도전] 뒤 포커스 복구), `typing-board.tsx`(`inputProps`·`shakeKey`·`onBoardClick` 선택 prop, 줄 전환 자동 스크롤과 포커스 복구, 입력 포커스 시 재정렬, 불일치 흔들림은 Web Animations API), `typing-stats.tsx`(1초 틱, `computeMetrics`로 타수·정확도), `result-view.tsx`(`onRetry`), `/dev/typing-ui` 데모는 정적 미리보기를 데모 안으로 이동(`dummy-states.ts`는 데모용 유지, Task 018 제거 대상). 서버 코드 변경 없음
 - Task 015 산출물: 코드 변경은 줄 전환 직후 오판 수정뿐(`src/lib/typing/session.ts`의 `lastAdvanceAt`·`STRAY_ENTER_WINDOW_MS`·`repeat` 처리, `use-typing-session.ts`가 `e.repeat` 전달, `/dev/typing-session` 케이스 28건). 나머지는 검증 결과 기록. 이월 항목은 Task 016(HTTP 200 not-found, 결과 뷰 유지)·017(예문 화면의 이전 목록 링크, 스크롤 실기기)·018(S1 stale 순서 재확인)에 추가
 - Task 016 산출물: `src/components/common/passage-retry-button.tsx`(`label` prop, `useTransition`으로 재조회 중 비활성화), `passage-error-state.tsx`(config 설명), `src/app/_components/passage-list-section.tsx`·`passages/[id]/_components/passage-screen.tsx`(config·0건·본문 없음에 [다시 확인] 주입), `passages/[id]/not-found.tsx`(`PassageErrorState` 사용), `src/app/error.tsx`(`retry` + [예문 목록으로], `reset` 미사용), `passage-browser.tsx`(도달 불가 분기 제거). 결정: HTTP 200 not-found 허용(`noindex`), 결과 뷰 복원은 `<Activity>` 보존으로 의도된 동작. 이월 항목은 Task 017(숨겨진 목록 화면의 `h1`이 뒤로 가기 후 DOM에 남음, `EmptyState` 제목이 `h3`라 헤딩 레벨이 건너뜀)에 추가
-- 다음은 Task 017. Task 018은 016·017 이후
+- Task 017 산출물: 측정 중심 Task로 코드 변경은 결함 수정뿐. `typing-board.tsx`(완료 줄 `opacity-60` 제거, 현재 줄 `scroll-mt-16`, `CompletedLines`/`PendingLines` 분리로 입력 중 완료·남은 줄 재렌더 0건), `typing-stats.tsx`(`Progress`에 `aria-valuenow`·`aria-valuetext`), `empty-state.tsx`(제목 `h3`→`h2`), `passage-retry-button.tsx`(`aria-disabled`로 포커스 유지, 숨김 `role="status"` 안내), `passage-card.tsx`(포커스 링 `ring-foreground/60`). 대비 4.5:1·키보드 E2E·S3(최대 56ms, Long Task 0건)는 통과, 미확인·이월은 Task 018 구현 사항의 "Task 017 이월" 참조
+- 다음은 Task 018
 
 ## 결정 기록 (Task 002, 004, 005에서 채움)
 
@@ -572,7 +573,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
 
     **엣지(연타)**: config 화면 [다시 확인]을 50ms 간격으로 8회 눌렀을 때 1건만 처리하고 7건은 비활성화됨('확인 중...'). 반면 예문 0건 화면은 재조회가 50ms 안에 끝나 8건 모두 처리됨(중복 요청이 겹치는 것은 아니고 매번 완료된 요청). `error.tsx`는 `retry()`가 transition이 아니라 `isPending`으로 막을 수 없고, 상태로 막는 방식도 재시도가 50ms 안에 새 오류로 끝나 효과가 없어 단순 `retry`로 되돌림(클릭 8회 → RSC 요청 9건, 겹치는 요청 없음). **콘솔**: 최종 페이지 기준 오류 0건. 세션 누적 오류는 모두 검증 환경 때문(3100번 이전 서버의 정적 chunk 500, 강제 throw의 React #441, 재빌드 중 이전 빌드 ID의 `_rsc` 404). **결정**: ① config와 목록 0건에 [다시 확인]을 추가한다. PRD F009(55행)가 각 케이스에 안내 문구와 복구 버튼을 요구하고, 오류는 캐시되지 않아 복구가 즉시 반영되므로(D11) 재조회가 유효하다. Task 015 기록의 'config는 버튼 없음, D11 의도'는 D11이 캐시 폴백 결정이라 근거가 없는 오기이며 현재 구현은 이를 정정한다. config는 환경 변수 수정 시 서버 재시작이 필요하다는 안내를 설명에 넣었다. ② 없는 예문·비활성 예문의 HTTP 200은 허용한다. Suspense 안에서 `notFound()`를 호출하면 헤더가 이미 전송되어 200이 되는 것이 Next 문서(`loading.md`, `not-found.md`, `streaming.md`)에 명시되어 있고, Next가 `noindex`를 자동 주입하며(실측 확인) 단일 사용자 앱이다. Suspense 밖에서 선검사하면 404가 가능하나 노션 조회가 로딩 UI를 막아 비용이 크다. ③ 결과 뷰 복원은 의도된 동작으로 둔다. `cacheComponents: true`에서 이전 라우트가 `<Activity mode="hidden">`으로 보존되어 상태가 유지되며(`cacheComponents.md`, `preserving-ui-state.md`), D6는 새로고침 기준이라 충돌하지 않는다. ④ `error.tsx`는 `retry` 주 버튼 + [예문 목록으로] 링크로 하고 `reset`은 쓰지 않는다. ⑤ `/passages/[id]/not-found.tsx`는 `PassageErrorState kind="notFound"`로 문구를 단일 소스화했다. ⑥ `passage-browser.tsx`의 `passages.length === 0` 분기는 `loadPassageSummaries`가 0건을 먼저 `empty`로 걸러 도달할 수 없어 제거했다. **변경 파일**: `passage-retry-button.tsx`(`label` prop, `useTransition`으로 재조회 중 비활성화), `passage-error-state.tsx`(config 설명), `passage-list-section.tsx`·`passage-screen.tsx`(config·empty 복구 버튼 주입), `[id]/not-found.tsx`, `error.tsx`, `passage-browser.tsx`. **미확인**: D11 마지막 성공값 폴백의 실제 재현(서버 기동 후 환경을 바꿀 수 없어 코드 경로 확인으로 한정), `retry()` 성공 경로를 같은 빌드에서 재현(복구 확인은 빌드가 바뀐 전체 이동), transient 시나리오의 브라우저 콘솔과 [다시 시도] 복구 성공, 목록 0건에서 행 추가 후 `refresh()` 즉시 반영 여부(캐시 최대 5분), `global-error.tsx` 필요 여부. **운영 메모**: 검증 서버는 `lsof`로 PID를 지정해 종료했고 3000번 포트에는 서버가 없었다. 3100번에 Task 015의 이전 `next-server`(PID 28310)가 남아 있어 새 서버 기동이 `EADDRINUSE`로 실패했고 이전 빌드 결과를 잠시 보고 있었으므로, 검증 전 `lsof`로 포트 점유를 확인한다
 
-- **Task 017: 접근성·반응형·다크모드 대비·성능 점검**
+- **Task 017: 접근성·반응형·다크모드 대비·성능 점검** ✅
   - 관련: F010, F014, PRD 8장, S3
   - 의존: 015 (016과 병렬 가능)
   - 구현 사항
@@ -583,17 +584,67 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - Task 015 이월: 예문 화면 `main` 안에 이전 목록 링크가 존재하는 이유 확인(보존된 숨김 화면이면 포커스·스크린리더에 노출되지 않는지), 실제 타이핑 속도에서 줄 전환마다 smooth 스크롤이 따라가는지 실기기 확인(줄당 약 32ms 주입 시 18~31번 줄이 viewport 밖으로 측정된 사례)
     - Task 016 이월: 결과 뷰에서 [목록으로] 후 뒤로 가기를 하면 숨겨진 목록 화면의 `h1`('예문 목록')이 DOM에 남는다(`<Activity mode="hidden">` 보존 추정) — 숨김 처리되어 포커스·스크린리더에 노출되지 않는지 확인. `EmptyState`의 제목이 `h3`라 페이지에 `h2`가 없으면 헤딩 레벨이 건너뛰므로 영향 범위(필터 0건 등)와 함께 확인. 오류·빈 상태 화면이 재조회 후 바뀔 때 `role="alert"` 또는 포커스 이동 없이 스크린리더에 전달되는지 확인
   - 수용 기준
-    - [ ] 대비 측정표가 이 Task의 `테스트 결과`에 기록되고 모두 4.5:1 이상(F010)
-    - [ ] 키보드 단독 E2E 1회 통과
-    - [ ] S3 측정값 기록(100ms 이내)
+    - [x] 대비 측정표가 이 Task의 `테스트 결과`에 기록되고 모두 4.5:1 이상(F010) (아래 테스트 결과 표. 수정 전 완료 줄 correct만 라이트 2.64·다크 3.96으로 미달이어서 고친 뒤 재측정, 텍스트 전 항목 4.5:1 이상, 비활성 버튼은 WCAG 예외)
+    - [x] 키보드 단독 E2E 1회 통과 (마우스 없이 Tab·Enter·Esc, 입력만 `insertText`)
+    - [x] S3 측정값 기록(100ms 이내) (프로덕션 31줄 1600자: React 핸들러 최대 2.4ms, 프레임 기준 최대 34ms, Event Timing 최대 56ms, Long Task 0건)
   - 테스트 체크리스트 (Playwright MCP)
-    - [ ] 정상: `browser_press_key`(Tab/Enter/Esc)만으로 목록 선택 → 타이핑 → 결과 버튼 조작 완주
-    - [ ] 정상: `browser_emulate_media`로 라이트/다크 전환 → 화면별 스크린샷, `getComputedStyle`로 토큰 대비 4.5:1 이상 측정
-    - [ ] 정상: `browser_resize` 375px/768px/1280px에서 목록·타이핑·결과 레이아웃과 가로 스크롤 없음
-    - [ ] 엣지: 테마 토글 후 새로고침 → 선택 유지, 첫 로드 시 잘못된 테마 깜빡임 없음
-    - [ ] 엣지: 줄 완료/결과 영역의 `aria-live` 영역 외에 글자 단위 `aria-live` 없음(`browser_snapshot`/`browser_evaluate`로 확인)
-    - [ ] 성능: 30줄 이상 예문 입력 → 갱신 시간 측정 100ms 이내(S3)
-  - 테스트 결과: (미수행)
+    - [x] 정상: `browser_press_key`(Tab/Enter/Esc)만으로 목록 선택 → 타이핑 → 결과 버튼 조작 완주 (Playwright `page.keyboard.press`로 수행. 한글은 IME가 아니라 `insertText`로 주입)
+    - [x] 정상: `browser_emulate_media`로 라이트/다크 전환 → 화면별 스크린샷, `getComputedStyle`로 토큰 대비 4.5:1 이상 측정 (대비는 `getComputedStyle`+알파 합성으로 전 항목 측정. 라이트/다크 스크린샷은 375px 목록·타이핑·결과·오류와 포커스 링 전후만 저장했고 화면 전체 쌍은 만들지 않음)
+    - [x] 정상: `browser_resize` 375px/768px/1280px에서 목록·타이핑·결과 레이아웃과 가로 스크롤 없음 (21개 조합 모두 가로 스크롤 없음)
+    - [x] 엣지: 테마 토글 후 새로고침 → 선택 유지, 첫 로드 시 잘못된 테마 깜빡임 없음 (첫 페인트 시점 html class로 판정, 픽셀 비교는 아님)
+    - [x] 엣지: 줄 완료/결과 영역의 `aria-live` 영역 외에 글자 단위 `aria-live` 없음(`browser_snapshot`/`browser_evaluate`로 확인) (글자 span 1600개 aria 0, live 영역은 줄 완료 안내 1개와 불일치 시 role=alert)
+    - [x] 성능: 30줄 이상 예문 입력 → 갱신 시간 측정 100ms 이내(S3) (헤드리스 60Hz, 아래 결과 참조)
+  - 테스트 결과: (2026-10-06, `next build && next start -p 3100` 노션 실호출, 오류 재현용으로 `NOTION_TOKEN`만 환경 변수로 덮어쓴 3101 서버 사용, `.env` 불수정, 기준선 Passages 7행·창세기 1장 31줄) `tsc`/`lint`/`build` 통과, 최종 빌드에서 콘솔 오류 0건. 측정은 Playwright MCP의 `browser_run_code_unsafe`(`page.keyboard`, `emulateMedia`, `setViewportSize`)와 `browser_evaluate`로 수행. 대비 계산은 `getComputedStyle` 색을 canvas로 sRGB 변환하고 조상 배경의 알파와 `opacity`를 합성한 뒤 WCAG 상대 휘도로 산출했고(스니펫은 저장소에 넣지 않음), Task 009의 토큰 단독값(라이트 correct 5.62 등)을 그대로 재현함을 먼저 확인.
+    **결함 수정 5건**:
+    1. **완료 줄 `opacity-60`이 대비를 깎음**: `CompletedLine`의 `opacity-60`이 `correct` 글자를 배경과 합성해 라이트 2.64·다크 3.96(F010 미달). 토큰 값(5.62/9.50) 문제가 아니라 합성 문제라 `opacity`만 제거(완료는 `Check` 아이콘과 초록 글자로 구분 유지). 재측정 5.62 / 9.50.
+    2. **현재 줄이 sticky 헤더에 가려짐**: 375×340(가상 키보드 흉내)에서 3줄로 줄바꿈된 줄(높이 276px)이 `scrollIntoView({block:"center"})` 때문에 헤더(57px) 아래로 11~25px 가려짐. 현재 줄 `li`에 `scroll-mt-16`. 수정 후 줄 간격 300ms와 `reduced-motion`에서 위반 0건.
+    3. **재렌더 범위**: 입력 커밋 179개 중 173개에서 완료·남은 줄 30개가 전부 재렌더됨(DOM이 바뀌지 않아 보이지 않았고, 코드 주석의 '재렌더되지 않는다'가 사실과 달랐음). `CompletedLines({lines,count})`/`PendingLines({lines,from})`로 분리해 props를 `lines`(안정 참조)와 숫자로 한정, 수동 `memo` 없이 React Compiler가 요소를 캐시. 수정 후 입력 커밋 재렌더 0건.
+    4. **접근성 3건**: (a) `EmptyState` 제목 `h3`→`h2`(필터 0건에서 h1→h3 건너뜀). (b) shadcn `Progress` 래퍼가 `value`를 Radix Root에 넘기지 않아 `aria-valuenow`가 없었음 → `TypingStats`에서 `aria-valuenow`·`aria-valuetext`("1 / 31줄 완료") 지정(`ui/` 미수정). (c) `PassageRetryButton`: Enter 후 `disabled`가 되며 포커스가 `body`로 빠지고 재조회가 끝나도 복구되지 않으며 스크린리더 안내도 없었음 → `aria-disabled`와 클릭 무시로 포커스 유지, 화면에 보이지 않는 `role="status"`로 '다시 확인하는 중입니다'/'다시 확인했지만 아직 불러오지 못했습니다' 안내(사용자 선택: 포커스 유지 + 숨김 상태 안내). Enter 2연타해도 1회만 처리.
+    5. **카드 링크 포커스 링**: 카드 링크는 `outline-none`이라 `ring-ring/50` 하나뿐이어서 배경 대비 라이트 1.56·다크 1.89 → `ring-foreground/60`으로 5.25 / 7.04(`passage-card.tsx`만).
+
+    **대비 측정표** (텍스트 4.5:1, 큰 글자 3:1. 라이트 / 다크, 유효 배경 합성 기준)
+
+    | 화면 | 요소 | 라이트 | 다크 | 통과 |
+    |---|---|---|---|---|
+    | 타이핑 | 완료 줄 correct (수정 전 2.64 / 3.96) | 5.62 | 9.50 | ✅ |
+    | 타이핑 | 현재 줄(`bg-muted/40` 위) correct | 5.43 | 8.78 | ✅ |
+    | 타이핑 | 현재 줄 incorrect | 5.96 | 6.82 | ✅ |
+    | 타이핑 | 현재 줄 incorrectSpace 글자(배경 위) | 16.20 | 13.47 | ✅ |
+    | 타이핑 | 현재 줄 current | 6.49 | 9.73 | ✅ |
+    | 타이핑 | 현재 줄 pending | 4.72 | 5.66 | ✅ |
+    | 타이핑 | 현재 줄 composing (probe) | 5.58 | 10.35 | ✅ |
+    | 타이핑 | 현재 줄 extra (probe) | 5.92 | 7.75 | ✅ |
+    | 타이핑 | 남은 줄 pending | 4.88 | 6.12 | ✅ |
+    | 타이핑 | 불일치 안내(`text-destructive`) | 4.61 | 6.33 | ✅ |
+    | 공통 | h1 / 통계 값 | 19.80 | 18.97 | ✅ |
+    | 공통 | muted(설명·통계 라벨·내비) | 4.74 | 7.66 | ✅ |
+    | 공통 | 입력창 글자 | 19.13 | 15.81 | ✅ |
+    | 일괄 스캔 | 목록(47개)·필터 0건(13)·없는 예문(5)·본문 없음(6)·전역 404(5)·결과(24) 텍스트 전부 | 미달 0 | 미달 0 | ✅ |
+
+    일괄 스캔에서 라이트 목록의 '조건 초기화'가 3.71로 잡혔으나 `disabled`(필터 없음) 상태라 WCAG 비활성 예외이고 다크는 5.12. 최저값은 라이트 현재 줄 pending 4.72·불일치 안내 4.61로 여유가 작다. config·transient·`error.tsx`는 서버 오류를 재현해야 해서 동일 컴포넌트(`EmptyState`, `Button`)의 같은 토큰 값으로 갈음. **비텍스트(WCAG 1.4.11, 3:1)**: 포커스 `ring/50` 단독 1.5~1.9, 입력창 기본 테두리 2.50 / 3.86, Select 테두리 2.58 / 4.18, 불일치 입력창 테두리 4.61 / 2.45(안내 문구·아이콘·흔들림이 함께 있어 색 단독 아님). 카드 링크 외에는 shadcn 기본이라 손대지 않고 이월.
+
+    **테마**: 저장 테마와 시스템 테마가 다른 세 조합(시스템 라이트+저장 다크, 시스템 다크+저장 라이트, 시스템 다크+저장 시스템)에서 html class가 약 50ms에 설정되고 `first-paint`(약 84ms) 시점의 class가 모두 저장 테마와 일치. 첫 페인트 이후 class 이벤트는 같은 값 재적용뿐. 토글(라이트) 후 새로고침해도 `localStorage.theme`·class·배경색 유지, 다크도 동일. `disableTransitionOnChange` 설정, 아이콘은 CSS(`dark:hidden`)로 전환. 첫 계측은 `observe(documentElement)`가 문서 생성 전에 예외를 내 무효였고 `observe(document)`로 재측정.
+
+    **키보드 E2E**(애국가 1절, 마우스 없음): 목록 Tab 8회(헤더 메뉴 버튼·로고·테마 포함)로 카드 → Enter로 진입(포커스는 `body`) → Tab 4회로 입력창 → 4줄 완주 → 포커스 `h2#result-heading` → Tab 순서 [다음 예문]→[다시 도전]→[목록으로] → [다시 도전] Enter로 입력창 포커스 복구·입력 비움 → `Esc`로 입력 초기화 → 재완주 → [목록으로] Enter로 `/` 이동. [다음 예문] Enter는 `?lang=ko`를 유지하며 애국가 2절로 이동.
+    **aria 범위**: live 영역은 줄 완료 안내 `p[aria-live=polite]` 1개, 불일치 때만 `role=alert` 1개, 목록 필터 결과 수 `p[role=status]`, sonner 토스트 `section`(라이브러리). 글자 span 1600개 중 aria·role 보유 0, `aria-current="true"`는 현재 줄 1개, 입력창 `aria-label`·불일치 시 `aria-invalid`, 완료 줄 `Check` 아이콘 `aria-hidden`. 스킵 링크는 없고 `header`/`nav`/`main`/`footer` 랜드마크로 대체(앞 포커스 정지점 3~4개).
+    **숨김 Activity(Task 015·016 이월)**: 결과 뷰→[목록으로]→뒤로가기 후 `main` 안에 형제 `div`가 `display:none`으로 보존되어 있고(h1 '예문 목록', 링크 7개), 접근성 트리의 heading은 보이는 화면의 h1·h2뿐이며 Tab 16회 순회에서도 숨은 링크에 도달하지 않음 → 노출 없음. 예문 화면 `main` 안의 이전 목록 링크도 이 보존 화면이다.
+
+    **반응형**: 375/768/1280px × 목록·필터 0건·타이핑(창세기 긴 한글)·타이핑(영어)·없는 예문·config 오류(긴 설명)·결과 = 21개 조합 모두 `scrollWidth ≤ innerWidth`, 오버플로 요소 0. 375px 스크린샷으로 필터 세로 스택, 카드 1열, 통계 2열, 긴 줄 줄바꿈, 결과 버튼 한 줄 확인. **스크롤 추종**(창세기 31줄, 줄 입력 뒤 대기): 1280×800은 150ms·300ms 모두 위반 0. 375×340은 수정 후 300ms·`reduced-motion` 0건, 150ms는 smooth 애니메이션 완료 전 중간 위치라 5건(375×400은 1건)이 일시적으로 벗어남. 줄당 150ms 이내는 사람 속도가 아니라 판정에서 제외(Task 015의 32ms 주입 사례와 같은 계열의 도구 현상).
+
+    **성능 S3**(프로덕션, 1280×800, 창세기 31줄 1600자, 글자 간 40ms, 헤드리스 60Hz). 지표: handler = `beforeinput`→React 핸들러 종료, frame = `beforeinput`→두 번째 rAF(측정 바닥 약 33ms), Event Timing = 입력→다음 페인트(8ms 단위, 16ms 미만은 미기록). 수정 전 / 수정 후:
+
+    | 지표 | p50 | p95 | max |
+    |---|---|---|---|
+    | handler (ms) | 1.7 / 1.7 | 2.1 / 2.0 | 2.4 / 2.4 |
+    | frame (ms) | 15.5 / 16.3 | 32.2 / 32.2 | 34.5 / 34.1 |
+    | Enter frame (ms) | 17.7 / 16.4 | 32.6 / 31.5 | 33.2 / 32.2 |
+    | Event Timing 입력 (ms) | 32 / 32 | 56 / 56 | 56 / 56 |
+
+    Long Task(>50ms) 0건, 모두 100ms 이내. 재렌더 수정은 비용보다 구조 정리(PRD 8장 '현재 줄만 재렌더')이며 시간 지표는 거의 같다. DOM 변경(`MutationObserver`): 입력 중 완료·남은 줄 0건(현재 줄 14,338건), Enter 때 `ol`의 `childList` 120건(31회×약 4 = `li` 2개 교체). 재렌더 판정은 프로덕션 번들에 최소 `__REACT_DEVTOOLS_GLOBAL_HOOK__`를 주입해 `onCommitFiberRoot`에서 `ol` 하위 함수 fiber의 `PerformedWork`와 fiber 객체 복제 여부를 보았다(첫 시도는 부모가 bailout하면 자식 fiber가 복제되지 않아 이전 플래그가 남는 점을 놓쳐 오탐이어서 객체 동일성으로 걸러 재측정). 수정 후 입력 커밋 179개 중 0건, Enter 커밋 15개 중 5개에서 줄 묶음이 줄당 1회 재렌더.
+
+    **결정**: ① 재조회 버튼은 `aria-disabled`+숨김 `role="status"`(사용자 선택). 오류 화면 전체에 `role="alert"`는 연타 시 반복 낭독 우려로 채택하지 않음. ② 스킵 링크는 추가하지 않음(랜드마크가 우회 수단, 정지점 3~4개). ③ 카드 링크 외 shadcn 기본 포커스 스타일은 수정하지 않음(`ui/`는 CLI로만 관리). ④ 완료 줄 구분은 `opacity` 대신 `Check`+색.
+    **변경 파일**: `typing-board.tsx`(opacity 제거·`scroll-mt-16`·줄 묶음 분리), `typing-stats.tsx`, `empty-state.tsx`, `passage-retry-button.tsx`, `passage-card.tsx`.
+    **미확인·이월**: ① 실제 모바일 가상 키보드(iOS `visualViewport` 축소·주소창 변화)와 실기기 smooth 스크롤은 layout viewport 축소(375×340)로만 간접 확인. ② 스크린리더 실제 낭독은 접근성 트리·DOM으로만 확인(재조회 성공 후 화면이 바뀔 때의 안내는 확인 못함). ③ DevTools Performance 프로파일과 노트북 실기기 값은 미측정(헤드리스 60Hz 계측). ④ Safari·Firefox는 PRD 7.3 제외. ⑤ 예문 상세의 오류·빈 상태·없는 예문 화면에는 `h1`이 없고 `h2`뿐(`error.tsx`도 동일). ⑥ Select·입력창·버튼의 포커스 `ring` 단독 대비 1.5~1.9, 입력창 기본 테두리 2.50(라이트)은 shadcn 기본값. ⑦ config·transient·`error.tsx`의 대비는 동일 토큰으로 갈음. **운영 메모**: 검증 서버(3100·3101)는 재빌드마다 `lsof`로 PID를 지정해 종료·재기동했고 마지막에 정리했다. 3101 서버는 `NOTION_TOKEN=invalid-token-for-a11y-check` 환경 변수만 덮어썼다(`.env` 불수정, `git status`에 `.env` 없음).
 
 - **Task 018: 최종 검증 및 배포 준비**
   - 관련: S1~S7 전체, F008
@@ -604,6 +655,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
     - 빌드/배포 환경에 토큰·data source ID 설정(목록 프리렌더 시 노션 호출) 확인, `npm run build && npm run start`로 프로덕션 모드 검증
     - S1~S7 최종 체크리스트 실행 및 결과 기록, PRD 10장 미결 사항 최종 상태 갱신
     - Task 016 이월: D11 마지막 성공값 폴백(목록·줄)은 서버 기동 후 환경을 바꿀 수 없어 코드 경로 확인으로 한정했으므로 재현 방법이 있으면 재확인, `retry()` 성공 경로(같은 빌드에서 일시 오류 후 복구)와 transient 시나리오의 브라우저 콘솔·[다시 시도] 복구 성공 확인, 목록 0건에서 행 추가 후 `refresh()` 반영 시점(캐시 최대 5분) 확인, `/dev/*` 제거 후 `passage-error-state.tsx`·`error.tsx` 문구 최종 점검
+    - Task 017 이월: 예문 상세의 오류·빈 상태·없는 예문 화면에 `h1`이 없고 `h2`뿐이므로 필요하면 정리, Select·입력창·버튼 포커스 `ring` 단독 대비(1.5~1.9)와 입력창 기본 테두리 2.50(shadcn 기본값) 처리 여부 결정, 재조회 성공 후 화면이 바뀔 때의 스크린리더 안내 확인, 실기기 모바일 가상 키보드·스크린리더·DevTools Performance 프로파일 확인, `/dev/*` 제거 후 `passage-error-state.tsx`·`error.tsx`·재조회 버튼 문구 최종 점검
     - Task 015 이월: S1의 "새로고침 1회째 이전 데이터, 2회째 갱신 데이터" 순서를 정확한 캐시 생성 시각과 노션 수정 시각을 기록해 재확인(015에서는 1회째부터 갱신 데이터가 나옴), S2 겹받침/이중모음/빠른 연타별 수동 표 확보
   - 수용 기준
     - [ ] S1~S7 전 항목 통과 기록
