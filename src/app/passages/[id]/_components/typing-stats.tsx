@@ -65,8 +65,11 @@ export function TypingStats({
         <StatItem label="타수" value={Math.round(cpm)} unit="타/분" />
         <StatItem label="정확도" value={Math.round(accuracy * 10) / 10} unit="%" />
       </dl>
+      {/* shadcn Progress는 value를 Radix Root에 넘기지 않아 aria-valuenow가 빠지므로 직접 지정한다. */}
       <Progress
         value={progress}
+        aria-valuenow={Math.round(progress)}
+        aria-valuetext={`${completedLines} / ${totalLines}줄 완료`}
         aria-label="진행도"
         data-testid="typing-progress"
       />

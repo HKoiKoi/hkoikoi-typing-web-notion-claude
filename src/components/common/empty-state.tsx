@@ -16,7 +16,7 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-10 text-center">
       <Icon className="size-8 text-muted-foreground" />
-      <h3 className="font-semibold">{title}</h3>
+      <h2 className="font-semibold">{title}</h2>
       {description && (
         <p className="text-sm text-muted-foreground">{description}</p>
       )}

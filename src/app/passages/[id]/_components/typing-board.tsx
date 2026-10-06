@@ -26,10 +26,11 @@ function LineLabel({ label }: { label?: string }) {
 }
 
 // 완료/남은 줄은 props가 바뀌지 않는 정적 컴포넌트라 현재 줄 변경 시 재렌더되지 않는다.
+// 완료 줄을 opacity로 흐리게 하면 correct 글자 대비가 4.5:1 아래로 떨어지므로(라이트 2.64, 다크 3.96) 쓰지 않는다.
 function CompletedLine({ line }: { line: Line }) {
   const states = Array.from(line.text, (): CharState => "correct");
   return (
-    <li data-line-state="completed" className="flex gap-3 opacity-60">
+    <li data-line-state="completed" className="flex gap-3">
       <LineLabel label={line.label} />
       {/* 색 없이도 완료 줄을 구분하는 보조 표시 */}
       <Check className="mt-1.5 size-4 shrink-0" aria-hidden />
@@ -46,6 +47,20 @@ function PendingLine({ line }: { line: Line }) {
       <LineChars text={line.text} states={states} className="flex-1" />
     </li>
   );
+}
+
+// 완료/남은 줄 묶음은 props가 `lines`(안정된 참조)와 숫자뿐이다. 입력할 때마다 바뀌는 값(currentStates,
+// inputProps 등)을 받지 않으므로 React Compiler가 요소를 캐시해 글자 입력 중에는 다시 렌더되지 않는다.
+function CompletedLines({ lines, count }: { lines: Line[]; count: number }) {
+  return lines
+    .slice(0, count)
+    .map((line, index) => <CompletedLine key={index} line={line} />);
+}
+
+function PendingLines({ lines, from }: { lines: Line[]; from: number }) {
+  return lines
+    .slice(from)
+    .map((line, offset) => <PendingLine key={from + offset} line={line} />);
 }
 
 /**
@@ -79,6 +94,7 @@ export function TypingBoard({
   onBoardClick?: () => void;
 }) {
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const currentLine: Line | undefined = lines[currentIndex];
   const currentRef = useRef<HTMLLIElement>(null);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const prevIndexRef = useRef(currentIndex);
@@ -124,49 +140,48 @@ export function TypingBoard({
         {currentIndex > 0 ? `${currentIndex}번째 줄 완료` : ""}
       </p>
       <ol className="flex flex-col gap-3 font-mono text-lg leading-relaxed">
-        {lines.map((line, index) => {
-          if (index < currentIndex) return <CompletedLine key={index} line={line} />;
-          if (index > currentIndex) return <PendingLine key={index} line={line} />;
-          return (
-            <li
-              key={index}
-              ref={currentRef}
-              aria-current="true"
-              data-line-state="current"
-              className="flex flex-col gap-2 rounded-lg border-2 border-typing-current bg-muted/40 p-3"
-            >
-              <div className="flex gap-3">
-                <LineLabel label={line.label} />
-                <LineChars
-                  text={line.text}
-                  states={currentStates}
-                  extraText={extraText}
-                  className="flex-1 text-xl"
-                />
-              </div>
-              <div ref={inputWrapRef} className="flex flex-col gap-1 pl-15">
-                <Input
-                  {...(inputProps ?? { readOnly: true, value: inputValue, "aria-label": "타이핑 입력" })}
-                  onFocus={() => requestAnimationFrame(alignCurrentLine)}
-                  aria-invalid={mismatch}
-                  className={cn(
-                    "h-11 font-mono text-lg",
-                    mismatch && "border-4 border-destructive",
-                  )}
-                />
-                {mismatch && (
-                  <p
-                    role="alert"
-                    className="flex items-center gap-1 text-sm font-semibold text-destructive"
-                  >
-                    <CircleAlert className="size-4" aria-hidden />
-                    줄이 일치하지 않습니다
-                  </p>
+        <CompletedLines lines={lines} count={currentIndex} />
+        {currentLine && (
+          <li
+            key={currentIndex}
+            ref={currentRef}
+            aria-current="true"
+            data-line-state="current"
+            // scroll-mt-16: 중앙 정렬 시 sticky 헤더(약 57px) 아래로 줄 상단이 가려지지 않게 한다.
+            className="flex flex-col gap-2 scroll-mt-16 rounded-lg border-2 border-typing-current bg-muted/40 p-3"
+          >
+            <div className="flex gap-3">
+              <LineLabel label={currentLine.label} />
+              <LineChars
+                text={currentLine.text}
+                states={currentStates}
+                extraText={extraText}
+                className="flex-1 text-xl"
+              />
+            </div>
+            <div ref={inputWrapRef} className="flex flex-col gap-1 pl-15">
+              <Input
+                {...(inputProps ?? { readOnly: true, value: inputValue, "aria-label": "타이핑 입력" })}
+                onFocus={() => requestAnimationFrame(alignCurrentLine)}
+                aria-invalid={mismatch}
+                className={cn(
+                  "h-11 font-mono text-lg",
+                  mismatch && "border-4 border-destructive",
                 )}
-              </div>
-            </li>
-          );
-        })}
+              />
+              {mismatch && (
+                <p
+                  role="alert"
+                  className="flex items-center gap-1 text-sm font-semibold text-destructive"
+                >
+                  <CircleAlert className="size-4" aria-hidden />
+                  줄이 일치하지 않습니다
+                </p>
+              )}
+            </div>
+          </li>
+        )}
+        <PendingLines lines={lines} from={currentIndex + 1} />
       </ol>
     </div>
   );

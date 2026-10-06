@@ -32,7 +32,7 @@ export function PassageCard({ passage, filter }: PassageCardProps) {
   return (
     <Link
       href={href}
-      className="block h-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="block h-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-foreground/60"
     >
       <Card className="h-full transition-colors hover:bg-muted/40 hover:ring-foreground/20">
         <CardHeader>
