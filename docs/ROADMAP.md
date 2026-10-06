@@ -770,19 +770,21 @@ MVP 필수 Task가 모두 끝난 뒤 착수한다. 각 Task는 독립적이며 �
     - 입력 줄과 예문 줄이 같은 폰트를 쓰도록 스킨 범위 안에서 `font-mono`(`typing-board.tsx`의 `ol`과 입력창)를 대체하는 방식 결정(토큰 재정의 또는 스킨 범위 클래스). `typing-board.tsx` 수정이 필요하면 024에서 함께 반영
     - 애니메이션·전환 효과를 쓰면 `prefers-reduced-motion: reduce`에서 끔
   - 수용 기준
-    - [ ] 라이트/다크 × 한지 스킨에서 판정 토큰 7종과 본문·muted·버튼 텍스트 대비가 모두 4.5:1 이상(Task 017 방식: `getComputedStyle` 색을 canvas로 sRGB 변환, 조상 배경 알파·`opacity` 합성, WCAG 상대 휘도)이고 측정표를 결과에 기록
-    - [ ] 문양·폰트·토큰이 `data-skin="hanji"` 범위 밖(헤더, 푸터)에 영향을 주지 않는다
-    - [ ] `npx tsc --noEmit`, `npm run lint`, `npm run build` 통과, 임시 검증 코드 0건
+    - [x] 라이트/다크 × 한지 스킨에서 판정 토큰 7종과 본문·muted·버튼 텍스트 대비가 모두 4.5:1 이상(Task 017 방식: `getComputedStyle` 색을 canvas로 sRGB 변환, 조상 배경 알파·`opacity` 합성, WCAG 상대 휘도)이고 측정표를 결과에 기록
+    - [x] 문양·폰트·토큰이 `data-skin="hanji"` 범위 밖(헤더, 푸터)에 영향을 주지 않는다
+    - [x] `npx tsc --noEmit`, `npm run lint`, `npm run build` 통과, 임시 검증 코드 0건
   - 테스트 체크리스트 (Playwright MCP, `browser_evaluate`로 기존 타이핑 화면 루트에 `data-skin="hanji"`를 부여하거나 `SkinScope`를 하드코딩한 임시 빌드로 검증 — 임시 코드는 Task 안에서 제거)
-    - [ ] 정상: `browser_evaluate` → 스킨 범위의 `--typing-correct` 등 7종 `getComputedStyle` → 기본 테마와 다른 한지 값. 라이트·다크(`browser_emulate_media` 또는 `.dark` 토글) 각각 측정표 작성, 전부 4.5:1 이상
-    - [ ] 정상: `browser_take_screenshot` → 라이트·다크 × 한지 스킨 타이핑·결과 화면 4장, 문양이 장식 영역에만 있고 글자와 겹치지 않음
-    - [ ] 오류: 폰트 로드 실패(`browser_run_code_unsafe`로 `fonts.gstatic.com`/`/_next/static/media` 폰트 요청 차단) → `fallback` 폰트로 표시, 글자 누락·레이아웃 깨짐 없음, 콘솔 오류는 차단된 리소스 외 0건
-    - [ ] 엣지: `browser_resize` 375px → 한지 스킨 타이핑·결과 화면 `scrollWidth ≤ innerWidth`, 오버플로 요소 0(문양 SVG 포함)
-    - [ ] 엣지: `browser_emulate_media` `reducedMotion: reduce` → 스킨 애니메이션·전환 0건(`getAnimations()` 길이 0 또는 `animation-name: none`)
-    - [ ] 엣지(PRD 10장 18): `browser_network_requests` → 한글 폰트 파일 수·전송 크기, `<link rel="preload" as="font">` 존재 여부와 개수 기록. 목록(`/`)에서는 스킨 폰트 요청 0건
-    - [ ] 엣지: 헤더·푸터의 글자색·배경색·폰트가 스킨 적용 전후 동일(`getComputedStyle` 비교)
-    - [ ] 공통: 콘솔 오류 0건
-  - 테스트 결과: (미수행)
+    - [x] 정상: `browser_evaluate` → 스킨 범위의 `--typing-correct` 등 7종 `getComputedStyle` → 기본 테마와 다른 한지 값. 라이트·다크(`browser_emulate_media` 또는 `.dark` 토글) 각각 측정표 작성, 전부 4.5:1 이상
+    - [x] 정상: `browser_take_screenshot` → 라이트·다크 × 한지 스킨 타이핑·결과 화면 4장, 문양이 장식 영역에만 있고 글자와 겹치지 않음
+    - [x] 오류: 폰트 로드 실패(`browser_run_code_unsafe`로 `fonts.gstatic.com`/`/_next/static/media` 폰트 요청 차단) → `fallback` 폰트로 표시, 글자 누락·레이아웃 깨짐 없음, 콘솔 오류는 차단된 리소스 외 0건
+    - [x] 엣지: `browser_resize` 375px → 한지 스킨 타이핑·결과 화면 `scrollWidth ≤ innerWidth`, 오버플로 요소 0(문양 SVG 포함)
+    - [x] 엣지: `browser_emulate_media` `reducedMotion: reduce` → 스킨 애니메이션·전환 0건(`getAnimations()` 길이 0 또는 `animation-name: none`)
+    - [x] 엣지(PRD 10장 18): `browser_network_requests` → 한글 폰트 파일 수·전송 크기, `<link rel="preload" as="font">` 존재 여부와 개수 기록. 목록(`/`)에서는 스킨 폰트 요청 0건
+    - [x] 엣지: 헤더·푸터의 글자색·배경색·폰트가 스킨 적용 전후 동일(`getComputedStyle` 비교)
+    - [x] 공통: 콘솔 오류 0건
+  - 구현 상태: 구현·Playwright 검증 완료(2026-10-06). 수용 기준·체크리스트 체크 완료
+  - 테스트 결과: (2026-10-06) `tsc`·`lint`·`build` 통과(임시 페이지로 빌드 후 제거, 임시 코드 0건). **문서 확인**: 구글 폰트는 `subsets` 이름 단위로 preload되는데 한글은 이름이 아닌 번호 슬라이스(unicode-range)라 preload 대상이 아니다. 그래서 `preload: false`, `subsets: ["latin"]`로 두고 한글은 화면에 쓰인 슬라이스만 지연 로드한다. `@theme inline`은 `font-mono` 값을 유틸리티에 인라인하므로 변수 재정의가 안 돼 `[data-skin="hanji"] .font-mono { font-family: inherit }`로 입력·예문 줄을 같은 폰트로 맞췄다(`typing-board.tsx` 수정 불필요, 024에서 정렬 확인). **폰트 결정(PRD 10장 18 근거)**: Gowun Batang(400/700, 슬라이스 95개×2굵기=190파일·약 3.0MB 전체) vs Hahmlet(가변, 92파일·약 1.85MB 전체). 브라우저는 쓰인 슬라이스만 받으므로 Gowun Batang 400/700을 선택(고전 명조 분위기, 굵기 2개). 빌드 확인: 폰트 `@font-face` CSS는 `SkinScope`를 쓰는 라우트 청크에만 있고 `/` 청크에는 0건, `<link rel=preload as=font>`도 없음. 실제 전송 크기·파일 수는 024 연동 후 브라우저에서 측정 필요(PRD 수정은 사용자 승인 후). **구조**: `SkinScope`는 서버 컴포넌트, `default`는 속성 없는 `div`(스킨 전환 시 리마운트 방지), F017은 `skin="default"`를 넘겨 결합. 문양은 `hanji-ornaments.tsx`(단청 모서리 4개, 구름 구분선)로 모서리·하단에만 배치, 애니메이션 없음. **대비 측정(스크립트 계산, WCAG 상대 휘도, OKLCH→sRGB 변환. 브라우저 `getComputedStyle` 측정은 미수행)**: 라이트 본문 16.2·muted 7.6(muted 배경 위 6.7)·버튼 10.0, 판정 correct 7.1/incorrect 6.9(공백 배경 위 5.5)/pending 6.7/current 9.0/composing 6.8/extra 8.1(현재 줄 muted/40 배경 위 6.4~8.6). 다크 본문 14.8·muted 8.4(6.4)·버튼 10.4, correct 9.5/incorrect 8.0(공백 배경 위 5.4)/pending 7.9/current 9.8/composing 11.4/extra 8.6(현재 줄 위 6.9~10.1). 전부 4.5:1 이상. **미수행**: Playwright 스크린샷·폰트 차단·375px·reduced-motion·헤더/푸터 비교(스킨을 화면에 연결하는 024 이후 또는 임시 하드코딩 빌드로 수행 필요) **브라우저 검증(2026-10-06, 임시 하드코딩 페이지 `/tmp-skin/{hanji,default}`로 수행 후 제거)**: `browser_evaluate`로 `getComputedStyle` 기반 대비 재측정 — 스크립트 계산값과 일치(라이트 최솟값 5.44, 다크 5.39, 둘 다 4.5 이상, 공백 오타 배경 위 incorrect가 최솟값). 스크린샷 4장(라이트·다크 × 타이핑·결과) 확인: 문양은 모서리 4개와 하단 구름 구분선에만 있고 글자와 겹치지 않음, 결과 화면까지 `data-skin="hanji"` 유지. 헤더·푸터의 글자색·배경색·폰트는 default 페이지와 완전 동일, default에는 `[data-skin]` 0개. 375px: 타이핑·결과 화면 모두 `scrollWidth ≤ innerWidth`, 오버플로 요소 0. 폰트 요청 차단: fallback 명조로 표시되고 글자 누락·레이아웃 깨짐 없음, 콘솔 오류는 차단된 리소스(`ERR_FAILED`)뿐. `reducedMotion: reduce`: `getAnimations()` 0건(애니메이션 없음). 입력 줄·예문 줄 `font-family` 동일(Gowun Batang). **폰트 전송량(프로덕션 `next build && next start`)**: `/`와 default 스킨 페이지는 스킨 폰트 0건, hanji 3줄 예문은 woff2 13개·약 204.5KB(인코딩 크기), `<link rel=preload as=font>` 0건. 참고: dev 서버에서는 같은 화면에서 17개가 요청되어 dev/프로덕션 수치가 다르므로 프로덕션 수치를 기준으로 한다. 예문 줄 수·글자 종류에 따라 슬라이스 수는 늘어나므로 창세기급 긴 예문의 실측은 024에서 한다. `tsc`·`lint`·`build` 통과, 임시 코드 0건. **한지 질감 개선(2026-10-06)**: 단색 배경에 닥섬유 SVG 타일(480px, 섬유 40개·가장자리 복제로 이음새 없음)·종이결(`feTurbulence` 고주파, 160px)·얼룩(저주파, 480px)을 data URI 3겹으로 `[data-skin="hanji"]` 배경에만 적용(외부 이미지·요청 없음, 라이트/다크 각 약 8KB+노이즈). 글자 위 최악 배경(질감 가장 어두운/밝은 픽셀) 기준 대비를 재측정해 라이트의 `--typing-correct/incorrect/pending/composing`만 명도를 0.03~0.05 낮춤(correct 0.39, incorrect 0.42, pending 0.40, composing 0.40) — 최악값 라이트 4.86 이상, 다크 4.59 이상(토큰 변경 없음).
+
 
 - **Task 024: 타이핑·결과 화면 스킨 연동 및 E2E 검증**
   - 관련: F016, S8(최종), S2·S3·S5·S7 회귀
