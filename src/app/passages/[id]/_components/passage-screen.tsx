@@ -122,19 +122,21 @@ export async function PassageScreen({
 
   // 스킨은 정상 분기에서만 감싼다(오류·빈 상태·notFound 화면에는 적용하지 않는다).
   return (
-    <SkinScope skin={passage.skin}>
-      <Container className="pb-16">
-        <PageHeader
-          title={passage.title}
-          description={`${passage.category} · ${passage.lines.length}줄`}
-        />
-        <TypingScreen
-          passage={passage}
-          nextHref={nextHref}
-          hasNext={hasNext}
-          listHref={listHref}
-        />
-      </Container>
-    </SkinScope>
+    <Container>
+      <SkinScope skin={passage.skin}>
+        <div className={passage.skin === "hanji" ? "px-4 pb-16 sm:px-6" : "pb-16"}>
+          <PageHeader
+            title={passage.title}
+            description={`${passage.category} · ${passage.lines.length}줄`}
+          />
+          <TypingScreen
+            passage={passage}
+            nextHref={nextHref}
+            hasNext={hasNext}
+            listHref={listHref}
+          />
+        </div>
+      </SkinScope>
+    </Container>
   );
 }
