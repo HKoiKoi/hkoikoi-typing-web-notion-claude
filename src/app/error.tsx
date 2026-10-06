@@ -23,7 +23,7 @@ export default function Error({
 
   return (
     <Container className="flex flex-col items-center gap-4 py-24 text-center">
-      <h2 className="text-2xl font-bold">문제가 발생했습니다</h2>
+      <h1 className="text-2xl font-bold">문제가 발생했습니다</h1>
       <p className="text-muted-foreground">
         예상하지 못한 오류가 발생했습니다. 다시 시도하거나 예문 목록으로 이동해
         주세요.

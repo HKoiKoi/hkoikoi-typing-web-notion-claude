@@ -61,6 +61,7 @@ export async function PassageScreen({
         return (
           <PassageErrorState
             kind="empty"
+            headingLevel={1}
             description="노션 Lines DB에 이 예문의 줄을 추가하세요"
             action={
               <div className="flex flex-wrap justify-center gap-2">
@@ -74,12 +75,17 @@ export async function PassageScreen({
         );
       case "transient":
         return (
-          <PassageErrorState kind="transient" action={<PassageRetryButton />} />
+          <PassageErrorState
+            kind="transient"
+            headingLevel={1}
+            action={<PassageRetryButton />}
+          />
         );
       case "config":
         return (
           <PassageErrorState
             kind="config"
+            headingLevel={1}
             action={
               <div className="flex flex-wrap justify-center gap-2">
                 <PassageRetryButton label="다시 확인" />
