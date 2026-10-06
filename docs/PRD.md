@@ -18,6 +18,7 @@
 | S5 | 예문 선택 → 전체 줄 완료 → 결과 → 다음 예문까지 막힘 없이 이어진다 | 창세기 1장(31줄) 완주 E2E 1회 통과 |
 | S6 | 노션 오류·빈 DB 상황에서 빈 화면 대신 안내 화면이 나온다 | 토큰 오류/빈 DB/네트워크 오류 각각 재현 |
 | S7 | 줄 전환과 자동 스크롤이 동작한다 | 31줄 예문에서 현재 줄이 항상 화면 안에 보이고, 마지막 줄 Enter 시 결과 화면 진입 |
+| S8 | `Theme=hanji` 예문은 타이핑·결과 화면에 `data-skin="hanji"`가 적용되고, 그 외 값·모르는 값·빈 값은 기본 테마다. 라이트/다크 모두에서 판정 색(맞음/틀림/현재/미입력) 대비가 4.5:1 이상이다 | 노션에서 `Theme`을 `hanji`/`default`/빈 값/임의 문자열로 바꿔 각각 타이핑·결과 화면 루트의 `data-skin` 속성을 개발자 도구로 확인(예문 목록·헤더에는 없어야 함). 라이트·다크 각각(한국 스킨 + 다크 조합 포함)에서 판정 글자색과 배경색의 대비를 개발자 도구 대비 검사기로 측정 |
 
 ## 2. 사용자 여정
 
@@ -40,7 +41,7 @@
 
 ## 3. 기능 목록
 
-우선순위: **MVP**(필수) / **선택**(MVP 안에서 여유 시) / **제외**.
+우선순위: **MVP**(필수) / **선택**(MVP 안에서 여유 시) / **MVP 이후**(MVP 완료 뒤 Phase에서 추가하는 신규 기능) / **제외**.
 
 | ID | 기능 | 우선순위 | 수용 기준 | 페이지 |
 |----|------|---------|----------|--------|
@@ -59,9 +60,11 @@
 | F013 | Enter 줄 전환 | MVP | 현재 줄이 전부 일치하면 Enter 한 번으로 다음 줄 이동(조합 중 Enter는 보류했다가 조합 확정 후 판정, 7.3). 불일치면 이동하지 않고 오류 표시. 마지막 줄 Enter는 종료 | 타이핑 화면 |
 | F014 | 자동 스크롤·진행도 | MVP | 줄 전환 시 현재 줄이 화면 안에 오도록 부드럽게 스크롤. 진행도 "n / 총 줄 수"와 진행 막대, 경과 시간, 실시간 타수·정확도 표시 | 타이핑 화면 |
 | F015 | 예문 본문 매핑 | MVP | Lines DB 행을 `Line Number` 순 줄 목록으로 변환(6장). `Label` 속성은 라벨로 분리(7.2) | 타이핑 화면 |
+| F016 | 예문별 테마 스킨 | MVP 이후 | 노션 Passages DB의 `Theme`(select, `default`/`hanji`)가 `hanji`인 예문은 타이핑·결과 화면에 `data-skin="hanji"`를 적용해 오방색/단청 기반 색, 직접 그린 SVG 문양, 한글 명조 폰트로 표시한다. `default`·모르는 값·빈 값은 기본 테마이며 행을 제외하지 않는다. 다크모드와 독립이라 한국 스킨 + 다크 조합이 가능하다. 헤더·예문 목록은 기본 테마 유지. 판정 색 대비 4.5:1 이상(S8). category/tag로 스킨을 추론하지 않는다 | 타이핑 화면, 결과 화면 |
+| F017 | 테마 효과 끄기 | MVP 이후(선택) | 타이핑 화면의 토글 하나로 F016 스킨을 끄고 기본 테마로 표시한다(문양·폰트 포함). 선택은 localStorage에 저장하고 저장 실패 시 무시한다. 설정 화면이 아니라 토글 컨트롤 하나이며, 다른 설정 항목은 두지 않는다 | 타이핑 화면 |
 
 ### MVP 제외
-로그인/계정, 서버 DB, 랭킹/리더보드, 노션 쓰기(결과 저장 등), 예문 앱 내 편집, 다중 사용자, 통계 대시보드, 설정 화면, 알림, 소리 효과, 이전 줄로 돌아가기, 중간 이탈 후 이어치기, 자동 줄 분할(글자 수 기준), 노션 페이지 본문(블록)·서식 읽기.
+로그인/계정, 서버 DB, 랭킹/리더보드, 노션 쓰기(결과 저장 등), 예문 앱 내 편집, 다중 사용자, 통계 대시보드, 설정 화면(F017의 토글 하나는 설정 화면이 아니므로 예외), 알림, 소리 효과, 이전 줄로 돌아가기, 중간 이탈 후 이어치기, 자동 줄 분할(글자 수 기준), 노션 페이지 본문(블록)·서식 읽기.
 
 ## 4. 메뉴 구조와 페이지별 기능
 
@@ -81,11 +84,11 @@
 | 역할 | 예문 탐색과 선택 |
 | 진입 | 헤더 메뉴/로고, 결과 화면 [목록으로], 오류 화면 복구 |
 | 사용자 행동 | 필터 선택, 카드 클릭 |
-| 주요 기능 | 서버 컴포넌트에서 예문 프로퍼티 조회 · 분류/언어/난이도/태그 필터 · 건수 표시 · 로딩 스켈레톤 · 같은 `Category` 안에서는 `Order` → `Title` 순 정렬 · (선택) 카드별 최고 기록 |
+| 주요 기능 | 서버 컴포넌트에서 예문 프로퍼티 조회 · 분류/언어/난이도/태그 필터 · 건수 표시 · 로딩 스켈레톤 · 같은 `Category` 안에서는 `Order` → `Title` 순 정렬 · (선택) 카드별 최고 기록 · 기본 테마 유지(스킨은 적용하지 않음. 선택: `skin`이 `hanji`인 카드에 스킨 배지 표시) |
 | 다음 이동 | 카드 클릭 → 타이핑 화면, 조회 실패 → 오류/빈 상태 |
 
 ### 타이핑 화면
-> 구현: F003, F004, F005, F008, F009(없는 예문/본문 없음), F010, F012, F013, F014, F015 | 진입 경로: 예문 선택 | 인증: 없음
+> 구현: F003, F004, F005, F008, F009(없는 예문/본문 없음), F010, F012, F013, F014, F015, F016, (F017) | 진입 경로: 예문 선택 | 인증: 없음
 > 라우트: `/passages/[id]` + 목록의 필터 쿼리(`?category=&lang=&difficulty=&tag=`). 본문은 Suspense 안에서 렌더하고 `loading.tsx`를 둔다(6장).
 
 참고 레이아웃은 한컴타자연습 스타일: 전체 본문 영역 안에서 **예문 줄(위) / 입력 줄(바로 아래)** 쌍으로 표시하고, 별도 영역에 타이머·진행도·실시간 타수·정확도를 둔다.
@@ -94,21 +97,21 @@
 |------|------|
 | 역할 | 여러 줄 예문 따라 치기와 실시간 판정 |
 | 진입 | 예문 목록 카드, 결과 화면의 [다음 예문]/[다시 도전] |
-| 사용자 행동 | 입력, Enter로 줄 전환, 백스페이스 수정, [처음부터] 버튼, [목록으로] |
+| 사용자 행동 | 입력, Enter로 줄 전환, 백스페이스 수정, [처음부터] 버튼, [목록으로], (선택) [테마 효과 끄기] 토글 |
 | 본문 영역 | 전체 줄을 세로로 나열. 완료한 줄은 흐리게(입력 결과 유지), 현재 줄은 강조 + 입력 줄 표시, 남은 줄은 기본 색. 줄 라벨(예: `1절`)은 줄 앞에 작은 배지로만 표시 |
 | 보조 영역 | 경과 시간(타이머), 진행도 "n / 총 줄 수"와 진행 막대, 실시간 타수(타/분)·정확도(%) |
-| 주요 기능 | 글자별 span 렌더링 · 숨은 input으로 입력 수신(현재 줄 1개) · 줄 전환 시 입력 초기화와 자동 스크롤 · 마지막 줄 완료 감지 · Esc 또는 [처음부터]로 전체 초기화 · 화면 클릭 시 입력창 재포커스 |
+| 주요 기능 | 글자별 span 렌더링 · 숨은 input으로 입력 수신(현재 줄 1개) · 줄 전환 시 입력 초기화와 자동 스크롤 · 마지막 줄 완료 감지 · Esc 또는 [처음부터]로 전체 초기화 · 화면 클릭 시 입력창 재포커스 · 예문의 `skin`이 `hanji`면 화면 루트에 `data-skin="hanji"` 적용(F016) · (선택) [테마 효과 끄기] 토글로 스킨 해제, 선택은 localStorage 저장(F017) |
 | 다음 이동 | 종료 → 결과 뷰, 존재하지 않는 예문/본문 없음 → 오류/빈 상태 |
 
 ### 결과 화면
-> 구현: F006, F007, (F011) | 진입 경로: 마지막 줄 Enter | 인증: 없음
+> 구현: F006, F007, F016, (F011) | 진입 경로: 마지막 줄 Enter | 인증: 없음
 > 별도 URL 없이 타이핑 화면 컴포넌트 안의 결과 뷰로 구현(새로고침 시 결과는 사라지며, 같은 예문 타이핑 화면으로 돌아옴).
 
 | 항목 | 내용 |
 |------|------|
 | 역할 | 결과 확인과 다음 행동 선택 |
 | 사용자 행동 | 결과 확인, 버튼 선택 |
-| 주요 기능 | 평균 타수(CPM)·정확도·연습 시간·WPM·오타 수·총 줄 수 표시 · [다음 예문] [다시 도전] [목록으로] · (선택) 최고 기록 갱신 표시와 localStorage 저장 |
+| 주요 기능 | 평균 타수(CPM)·정확도·연습 시간·WPM·오타 수·총 줄 수 표시 · [다음 예문] [다시 도전] [목록으로] · (선택) 최고 기록 갱신 표시와 localStorage 저장 · 타이핑 화면과 같은 스킨 유지(`data-skin`, F016. 테마 효과 끄기 선택 시 기본 테마) |
 | 다음 이동 | 다음 예문 → 타이핑 화면, 다시 도전 → 타이핑 화면, 목록으로 → 예문 목록 |
 
 ### 오류/빈 상태
@@ -139,6 +142,7 @@
 | Difficulty | select (`Easy` / `Medium` / `Hard`) | X | difficulty | 없으면 미지정 |
 | Tags | multi_select | X | tags | 없으면 빈 배열 |
 | Enabled | checkbox | X | enabled | `enabled === false`인 행은 클라이언트 매핑에서 제외(서버 필터 사용 안 함). 프로퍼티 없으면 전부 사용 |
+| Theme | select (`default` / `hanji`) | X | skin | 예문별 스킨(F016). 없으면 `default`. 모르는 값·빈 값도 `default`로 처리하며 행을 제외하지 않음 |
 
 **Lines DB**
 
@@ -170,28 +174,28 @@
 
 앱 내부 타입(개념):
 ```
-PassageSummary { id(노션 page id), title, language: 'ko'|'en', category, order?, difficulty?: 'Easy'|'Medium'|'Hard', tags[] }   // 목록용(Passages 프로퍼티만)
+PassageSummary { id(노션 page id), title, language: 'ko'|'en', category, order?, difficulty?: 'Easy'|'Medium'|'Hard', tags[], skin: 'default'|'hanji' }   // 목록용(Passages 프로퍼티만). skin은 Theme 속성(F016)
 Passage = PassageSummary & { lines: Line[] }                                                          // 타이핑용(Lines DB 행 포함)
 Line { text, label? }                                                                                 // label: Label 속성, 판정 제외
 TypingResult { passageId, accuracy, elapsedMs, cpm, wpm, mistakes, lineCount }                       // F011에서만 localStorage 저장
 PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transient' | 'notFound' | 'empty' }   // 조회 결과(6장 오류 처리)
 ```
-매핑 규칙: 프로퍼티는 이름으로 접근, 응답의 삭제 여부는 `in_trash` 필드만 사용, 타입이 다르거나 필수값이 비면 해당 행을 건너뛴다. Lines 행은 7.2 정규화를 적용해 `Line.text`/`Line.label`로 저장하며, 정규화 후 `Text`가 비는 행은 버린다. 줄이 0개면 "본문 없음" 오류로 처리한다.
+매핑 규칙: 프로퍼티는 이름으로 접근, 응답의 삭제 여부는 `in_trash` 필드만 사용, 타입이 다르거나 필수값이 비면 해당 행을 건너뛴다. 단 `Theme`은 선택 속성이므로 모르는 값·빈 값·프로퍼티 없음은 `skin = 'default'`로 처리하고 행을 제외하지 않는다. Lines 행은 7.2 정규화를 적용해 `Line.text`/`Line.label`로 저장하며, 정규화 후 `Text`가 비는 행은 버린다. 줄이 0개면 "본문 없음" 오류로 처리한다.
 
 ## 6. 노션 연동 명세
 
-- **목록 조회**: 공식 SDK(`@notionhq/client`)의 `dataSources.query`(`POST /v1/data_sources/{id}/query`)로 Passages DB의 프로퍼티만 가져온다. 환경 변수: `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`(Passages), `NOTION_LINES_DATA_SOURCE_ID`(Lines) (모두 서버 전용, `NEXT_PUBLIC_` 접두사 금지, 로컬은 `.env`). `@notionhq/client`는 `5.27.0`으로 정확히 고정해 설치했다. API 버전은 SDK 기본값(`2025-09-03`)을 쓰며, `2026-03-11`로 올려도 읽기 전용 앱이라 영향은 거의 없다. data source ID는 노션 DB 설정의 "Manage data sources" → "Copy data source ID"로 얻으며 DB ID와 서로 바꿔 쓸 수 없다. 두 DB 모두 통합(Integration)에 연결해야 한다. 조회 시 `filter_properties`로 필요한 프로퍼티만 받는다.
+- **목록 조회**: 공식 SDK(`@notionhq/client`)의 `dataSources.query`(`POST /v1/data_sources/{id}/query`)로 Passages DB의 프로퍼티만 가져온다. 환경 변수: `NOTION_TOKEN`, `NOTION_DATA_SOURCE_ID`(Passages), `NOTION_LINES_DATA_SOURCE_ID`(Lines) (모두 서버 전용, `NEXT_PUBLIC_` 접두사 금지, 로컬은 `.env`). `@notionhq/client`는 `5.27.0`으로 정확히 고정해 설치했다. API 버전은 SDK 기본값(`2025-09-03`)을 쓰며, `2026-03-11`로 올려도 읽기 전용 앱이라 영향은 거의 없다. data source ID는 노션 DB 설정의 "Manage data sources" → "Copy data source ID"로 얻으며 DB ID와 서로 바꿔 쓸 수 없다. 두 DB 모두 통합(Integration)에 연결해야 한다. 조회 시 `filter_properties`로 필요한 프로퍼티만 받는다. F016을 위해 `Theme`도 `filter_properties`에 포함한다.
 - **본문 조회**: 타이핑 화면 진입 시 해당 예문의 줄을 Lines data source에서 `dataSources.query`로 가져온다. 필터는 `{ property: "Passage", relation: { contains: <예문 page id> } }`, 정렬은 `Line Number` 오름차순이며, `filter_properties`로 `Text`/`Line Number`/`Label`만 받는다. `has_more`/`next_cursor`로 전부 수집한다(한 번에 최대 100개). 목록 조회에서는 줄을 읽지 않는다. 페이지 본문 블록(`blocks.children.list`)은 사용하지 않는다.
 - **행 → 줄 변환**:
   - `Text`(title)의 plain text를 이어 붙여 7.2 정규화를 적용하고, `Label`(rich_text)의 plain text도 같이 정규화한다(비면 라벨 없음).
   - 정규화 후 `Text`가 빈 행, `Line Number`가 빈 행, 삭제된 행(`in_trash`)은 건너뛰고 로그를 남긴다.
   - 쿼리 정렬 결과를 `Line Number` 기준으로 한 번 더 안정 정렬하며, 같은 번호가 중복되면 경고 로그만 남기고 응답 순서를 유지한다.
 - **페이지네이션**: 목록과 줄 모두 SDK의 `iteratePaginatedAPI`/`collectPaginatedAPI`를 사용한다(SDK README 예제로 확인됨).
-- **필터/정렬**: 목록 쿼리에는 서버 필터를 걸지 않는다. `Enabled`를 포함해 분류·언어·난이도·태그 필터는 전체를 가져온 뒤 클라이언트(매핑 단계)에서 처리한다(예문 수백 건 이하 가정). 정렬은 `Category` → `Order` → `Title`. 서버 필터는 줄 쿼리의 `Passage` 관계 필터만 쓴다.
+- **필터/정렬**: 목록 쿼리에는 서버 필터를 걸지 않는다. `Enabled`를 포함해 분류·언어·난이도·태그 필터는 전체를 가져온 뒤 클라이언트(매핑 단계)에서 처리한다(예문 수백 건 이하 가정). `Theme`도 서버 필터 없이 매핑 단계에서 `skin`으로 변환만 한다. 정렬은 `Category` → `Order` → `Title`. 서버 필터는 줄 쿼리의 `Passage` 관계 필터만 쓴다.
 - **캐싱/재검증** (Next.js 16.3.8 문서 `node_modules/next/dist/docs/` 확인 완료):
   - `next.config.ts`에 `cacheComponents: true`를 켜고, 조회 함수를 서버 전용 모듈로 분리해 `use cache` + `cacheLife` + `cacheTag`로 캐싱한다. `reactCompiler`와는 독립이다.
   - 5분 재검증은 `cacheLife({ revalidate: 300 })`으로 표현한다(`stale`, `revalidate`, `expire` 직접 지정 가능. 내장 `minutes` 프로파일은 revalidate 1분이라 맞지 않음).
-  - 태그: 목록은 `passages`, 줄은 `passage-{id}`. 수동 갱신은 `revalidateTag(tag, 'max')`(문서의 권장 형태, 두 번째 인자 필수)로 하고, 서버 액션에서 즉시 반영이 필요하면 `updateTag`를 쓴다. "새로고침" 버튼은 선택.
+  - 태그: 목록은 `passages`, 줄은 `passage-{id}`. 수동 갱신은 `revalidateTag(tag, 'max')`(문서의 권장 형태, 두 번째 인자 필수)로 하고, 서버 액션에서 즉시 반영이 필요하면 `updateTag`를 쓴다. "새로고침" 버튼은 선택. `Theme`은 목록 조회에 포함되므로 별도 태그 없이 기존 `passages` 캐시 태그의 갱신으로 반영된다.
   - 줄은 예문별로 한 번 조회 후 캐시하며, 같은 예문을 다시 열어도 노션을 다시 호출하지 않는다.
   - **스파이크 결과(Task 005, 프로덕션 실측)**: `cacheLife({ stale: 30, revalidate: 30, expire: 600 })` 조합을 썼다. `stale`이 30초 미만이거나 `expire`가 5분 미만이면 프리렌더에서 제외되므로 두 값을 이 하한 이상으로 둔다. 재검증 주기가 지난 뒤 첫 요청이 stale 값을 주지 않고 재조회 결과를 기다려 응답했다(1회 측정). 재검증이 실패하면 이전 데이터를 유지하지 않고 오류가 나며, 오류는 캐시되지 않아 복구 즉시 성공한다. **Task 011 권고**: (1) 사용자에게 이전 데이터를 보여주려면 캐시 밖 래퍼에서 마지막 성공값을 폴백으로 둔다(단일 프로세스에서만 보장) (2) 아래 오류 분류 주의 참고.
   - `cacheComponents: true`에서는 `params`/`searchParams`가 런타임 API이므로 `/passages/[id]` 본문은 `<Suspense>` 안에서 렌더하고 `loading.tsx`를 둔다. 목록 페이지가 빌드 시 프리렌더되면 `next build` 중 노션을 호출하므로 빌드 환경에도 토큰과 data source ID 두 개가 필요하다. 단 Task 005의 검증 페이지는 `connection()`으로 동적이어서 빌드 중 노션 호출 0건이고 `.env` 없이도 빌드됐다. 실제 목록 페이지는 `connection()`으로 요청 시점에 실행되며, Task 018 프로덕션 빌드 로그에서 빌드 중 노션 호출이 없음을 확인했다(`.env` 존재 상태).
@@ -260,6 +264,13 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 - **접근성**: 판정 구분을 색에만 의존하지 않음(밑줄/취소선/배경). 숨은 입력창에 `aria-label`, 현재 줄에 `aria-current="true"`, 줄 완료·결과만 `aria-live`로 안내(글자마다 낭독 금지). 키보드만으로 목록 선택 → 타이핑 → 결과 버튼 조작 가능. 포커스 링 유지.
 - **반응형**: 모바일/태블릿/데스크톱 지원. 예문 줄은 줄바꿈되며 모바일에서 입력창 포커스 시 가상 키보드에 가리지 않게 현재 줄이 보이도록 스크롤한다. 물리 키보드 데스크톱을 주 대상으로 하고 모바일은 사용 가능한 수준.
 - **다크모드**: next-themes(class 방식)와 기존 ThemeToggle 활용. 맞음/틀림/현재 글자 색은 `globals.css` 테마 토큰으로 정의하고 라이트/다크 대비 4.5:1 이상.
+- **테마 스킨(F016/F017)**: next-themes 모드와 별도 축인 `data-skin` 속성을 타이핑·결과 화면 루트에만 적용한다(헤더·예문 목록은 기본 테마).
+  - `globals.css`에서 `[data-skin="hanji"]`(라이트)와 `.dark [data-skin="hanji"]`(다크)로 CSS 변수를 재정의한다. 판정 색 대비는 두 조합 모두 4.5:1 이상(S8).
+  - 색은 오방색/단청 기반으로, 문양은 직접 그린 SVG로 제작한다. 문양은 글자 뒤 배경에 깔지 않고 장식 영역(테두리, 모서리, 제목 주변)에만 둔다(판정 색 대비 보호).
+  - 판정 구분은 색에만 의존하지 않는 기존 규칙(밑줄/취소선/배경)을 스킨에서도 유지한다.
+  - 한글 명조 폰트(`next/font/google`)는 타이핑 화면에서만 로드하고 굵기는 1~2개로 제한한다. 입력 줄과 예문 줄은 같은 폰트를 쓴다.
+  - 스킨의 애니메이션·효과는 `prefers-reduced-motion`을 따른다.
+  - 테마 효과 끄기(F017) 선택 시 `data-skin`을 적용하지 않는다(localStorage 읽기·쓰기 실패는 무시하고 스킨 켜짐 상태 유지).
 - **언어**: UI 문구 전부 한국어.
 
 ## 9. 기술 스택, 리스크
@@ -269,6 +280,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 - Tailwind CSS ^4, shadcn/ui(radix-nova, radix-ui ^1.6.7), lucide-react ^1.52.0, sonner ^2.0.8
 - next-themes ^0.4.6, usehooks-ts ^3.1.1
 - 추가: `@notionhq/client` 5.27.0(정확 고정), `server-only` 0.0.1. 노션 공식 SDK라 data source 쿼리와 페이지네이션 헬퍼 제공
+- 추가(F016): `next/font/google`(Next.js 내장, 별도 패키지 없음)로 OFL 라이선스 한글 명조(Gowun Batang 또는 Hahmlet) 로드. 문양은 직접 제작한 SVG라 외부 에셋 없음
 - 폼 검증 라이브러리, DB, 인증 라이브러리는 사용하지 않음
 - 새 UI는 `npx shadcn@latest add`로 추가(필요 후보: Card, Badge, Select/ToggleGroup, Button, Skeleton, Progress, ScrollArea). 컴포넌트 계층 규칙(ui → common → layout → app)과 `/components` 쇼케이스 반영 규칙 준수
 
@@ -284,6 +296,9 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 | 예문 수가 많아 목록이 무거움 | 가정은 수백 건 이하, 초과 시 MVP 이후 페이지네이션 |
 | 한글 지표 정의의 모호성(음절 vs 자모 타수) | 음절 기준으로 확정, 미결 사항에 기록 |
 | 긴 본문(30줄 이상)에서 자동 스크롤과 가상 키보드 충돌 | 현재 줄 기준 스크롤, 모바일은 수동 테스트 |
+| 한글 웹폰트의 용량과 `next/font/google` preload 동작 미확인 | 구현 Task에서 네트워크 요청으로 폰트 파일 수·크기·preload 여부를 확인하고, 타이핑 화면에서만 로드·굵기 1~2개로 제한(8장) |
+| 문양 라이선스 | 문양·색을 직접 제작(직접 그린 SVG, 오방색 기반 CSS 변수)해 회피. 폰트만 OFL 한글 명조 사용 |
+| 스킨 폰트 적용 시 IME 조합, `font-mono` 대체에 따른 입력 줄과 예문 줄 정렬 회귀 | 입력 줄과 예문 줄에 같은 폰트 적용(8장). 스킨 on/off 각각에서 S2 시나리오와 줄 정렬을 수동 재확인 |
 
 ## 10. 미결 사항
 
@@ -302,3 +317,6 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 13. 재조회([다시 시도]/[다시 확인]) 성공 후 포커스 처리. **(이월, Task 018: 성공하면 버튼이 사라져 포커스가 `body`로 빠진다. 목록에는 상태 영역("N개의 예문")이 있으나 스크린리더 실제 낭독은 미확인. 목록 `h1`로 포커스를 옮길지는 MVP 이후 결정)**
 14. shadcn 기본 포커스 `ring` 단독 대비(1.5~1.9)와 입력창 테두리 대비(2.50). **(결정: 유지, Task 018. `ui/`는 CLI로만 관리하므로 수정하지 않았고, 바꾸려면 `globals.css`의 `--ring`·`--input` 토큰 조정이 필요하나 앱 전체 모양이 바뀐다)**
 15. S2(한글 IME 수동 표)·S3(실기기 Performance)·스크린리더 낭독. **(미확인으로 확정, Task 018: 사용자가 건너뜀. 이전 Task의 구두 확인과 헤드리스 계측만 있음)**
+16. 예문별 스킨 결정 방식. **(결정: 노션 Passages DB의 `Theme` 속성(select, `default`/`hanji`)으로 결정하고 category/tag 추론은 쓰지 않음, 2026-10-06)**
+17. 스킨을 next-themes 모드에 추가할지 별도 축으로 둘지. **(결정: 모드에 추가하지 않고 별도 `data-skin` 축으로 분리. 이유: 한국 스킨 + 다크 조합이 가능하고 예문별 자동 적용이 되기 때문, 2026-10-06)**
+18. 스킨 폰트 최종 선택(Gowun Batang vs Hahmlet)과 한글 서브셋 preload 동작 확인. **(구현 Task에서 결정)**

@@ -11,6 +11,7 @@
 - **여러 줄 타이핑과 실시간 판정 (F003, F004, F005, F012, F013, F014)**: 현재 줄 글자별 판정, 한글 조합 중 상태 처리, 조합 중 Enter 보류(`pendingEnter`), 자동 스크롤과 진행도
 - **결과 요약 (F006)**: 정확도, 소요 시간, 타수(음절/분), WPM, 오타 수
 - **안정성/접근성 (F009, F010)**: 오류·빈 상태별 안내와 복구, 라이트/다크 대비 4.5:1 이상의 판정 색상
+- **예문별 한국 테마 스킨 (F016, F017, MVP 이후)**: 노션 Passages DB의 `Theme`(`default`/`hanji`)으로 타이핑·결과 화면에만 `data-skin="hanji"`(오방색/단청 기반 색, 직접 그린 SVG 문양, 한글 명조 폰트) 적용, 라이트/다크와 독립. 선택으로 "테마 효과 끄기" 토글
 
 참조 문서: `docs/PRD.md`(요구사항 단일 소스), `CLAUDE.md`/`AGENTS.md`(프로젝트 규약).
 
@@ -47,7 +48,7 @@
 
 ## 테스트 규약 (Playwright MCP)
 
-**대상**: API 연동과 비즈니스 로직 Task(004, 005, 010~015, 019~021). UI 중심 Task(003, 007~009, 016~018)도 화면 확인에 Playwright MCP를 쓴다. 타입 정의만 있는 Task 006은 `npx tsc --noEmit`으로 충분하다.
+**대상**: API 연동과 비즈니스 로직 Task(004, 005, 010~015, 019~022, 024, 025). UI 중심 Task(003, 007~009, 016~018, 023)도 화면 확인에 Playwright MCP를 쓴다. 타입 정의만 있는 Task 006은 `npx tsc --noEmit`으로 충분하다.
 
 **시나리오 작성 형식**: 정상 / 오류 / 엣지로 나누고, 각 항목을 `도구 → 입력 → 기대 결과`로 쓴다. 기대 결과는 숫자나 문구처럼 확인 가능한 값으로 적는다.
 
@@ -87,6 +88,7 @@
 
 ## 현재 상태 (2026-10-06 기준)
 
+- **MVP 이후 Phase 5(예문별 한국 테마 스킨, Task 022~025, F016·F017·S8) 추가(2026-10-06). 착수 순서는 022·023(병렬 가능) → 024 → 025(선택).** 선택 Task 019~021과는 서로 독립이다.
 - **MVP 필수 Task(001~018) 구현·검증 완료. 다음은 선택 Task 019·020.** Task 018은 사용자가 건너뛴 항목(S2 수동 표, 스크린리더, 실기기 Performance) 때문에 ✅를 보류했다(아래 Task 018 참고). 아래 목록은 Task별 산출물 이력이며, 이력에 나오는 `/dev/*`·`src/lib/mock`·`dev-probe.ts`·`dummy-states.ts`·스파이크 `lines.ts`는 Task 018에서 제거되어 더 이상 없다.
 - 완료: Phase 0(Task 001, commit `5b0868c`)과 Phase 1의 Task 002~006 전부, Phase 2의 Task 007~009, Phase 3의 Task 010. 다음 Task: 011(노션 데이터 연동)과 013(입력 엔진 훅)은 서로 병렬로 시작할 수 있다
 - 이미 존재하여 다시 만들지 않는 것
@@ -145,9 +147,11 @@ Phase 3 (기능)          006 ─> 010(순수 함수 + /dev/typing-lab) ──�
                         011,012,013 ─> 014(타이핑 화면 통합) ✅ ─> 015(통합 테스트)
 Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형/다크/성능) ─> 018(최종 검증/배포)
 선택                    015 이후 019(F011 최근 기록), 020(새로고침 버튼), 021(조합 중 불일치 경고)
+Phase 5 (스킨, MVP 이후) 011 ─> 022(스킨 타입·Theme 매핑·resolveSkin) ─┐
+                        017 ─> 023(한지 토큰·문양·폰트·SkinScope) ──────┴─> 024(타이핑·결과 화면 연동, E2E) ─> 025(테마 효과 끄기, 선택)
 ```
 
-- **병렬 가능 구간**: Task 004와 005(서로 독립), Phase 2 UI(007~009)와 Task 010(순수 함수), Task 011/012(노션 트랙)와 Task 013(입력 엔진 트랙).
+- **병렬 가능 구간**: Task 004와 005(서로 독립), Phase 2 UI(007~009)와 Task 010(순수 함수), Task 011/012(노션 트랙)와 Task 013(입력 엔진 트랙), Task 022(데이터 트랙)와 Task 023(스타일 트랙, `PassageSkin` 타입만 공유).
 - **조기 검증 원칙**: 가장 위험한 두 영역(한글 IME 이벤트 순서/조합 중 value 변경, 노션 캐시 재검증 동작)은 UI 구현 전 Phase 1에서 스파이크로 확인하고, 결과를 Task 011~013 설계에 반영한다.
 
 ## 성공 기준 매핑
@@ -161,6 +165,7 @@ Phase 4 (마무리)        015 ─> 016(오류 상태) , 017(접근성/반응형
 | S5   | 예문 선택 → 전체 줄 → 결과 → 다음 예문 무중단(창세기 1장 31줄) | 014                                   | 015, 018  |
 | S6   | 토큰 오류/빈 DB/네트워크 오류 시 안내 화면                     | 011, 012                              | 016, 018  |
 | S7   | 줄 전환과 자동 스크롤, 마지막 줄 Enter 시 결과 진입            | 014                                   | 015, 018  |
+| S8   | `Theme=hanji` → 타이핑·결과 화면에만 `data-skin="hanji"`, 그 외 값은 기본 테마, 라이트/다크 판정 색 대비 4.5:1 이상 | 022(매핑), 023(대비) | 024       |
 
 ## 개발 단계
 
@@ -712,4 +717,123 @@ MVP 필수 Task가 모두 끝난 뒤 착수한다. 각 Task는 독립적이며 �
     - [ ] 엣지: 조합 확정 후에는 경고가 사라지고 일반 판정으로 전환, 경고가 틀림 색을 쓰지 않음
     - [ ] 합성 (Playwright MCP): `compositionupdate` 합성 이벤트로 위 시나리오를 입력 화면에서 재확인
     - [ ] 수동: macOS 한글 IME로 실입력 확인
+  - 테스트 결과: (미수행)
+
+### Phase 5: 예문별 한국 테마 스킨 (F016, F017, MVP 이후)
+
+**목표**: 노션 Passages DB의 `Theme` 속성으로 예문마다 한국 테마 스킨(`hanji`)을 자동 적용한다. 스킨은 next-themes(라이트/다크)와 별개 축인 `data-skin` 속성이며 타이핑·결과 화면에만 적용하고, 헤더·예문 목록·오류 화면은 기본 테마를 유지한다(PRD 3장 F016·F017, 5·6·8·9장, 10장 16~18).
+**Phase 완료 조건**: S8 통과 기록(노션 `Theme` 값 4종 × 화면 확인, 라이트/다크 × 기본/한지 조합의 판정 색 대비 4.5:1 이상), 스킨 on/off 각각에서 S2·S3·S5·S7 회귀 없음, PRD 10장 18(폰트 최종 선택과 preload 동작) 결정 기록.
+**설계 원칙**
+
+- 스킨 결정은 `Theme` 속성만 쓴다. category/tag로 추론하지 않는다(PRD 10장 16).
+- `Theme`은 선택 속성이다. 모르는 값·빈 값·속성 없음은 `default`이며 행을 제외하지 않는다(필수값 누락 시 행을 건너뛰는 기존 매핑 규칙의 예외, PRD 5장).
+- 색·문양은 직접 제작(오방색/단청 기반 oklch 토큰, 직접 그린 SVG)하고 외부 에셋을 쓰지 않는다. 폰트만 OFL 한글 명조(Gowun Batang 또는 Hahmlet)를 `next/font/google`로 타이핑 화면에서만 로드한다.
+- 문양은 글자 뒤 배경에 깔지 않고 장식 영역(테두리, 모서리, 제목 주변)에만 둔다. 판정 구분은 색 외 보조 표시(밑줄/취소선/배경)를 스킨에서도 유지한다(PRD 8장).
+- Task 018에서 개발 전용 라우트를 모두 제거했으므로 임시 검증 코드는 만들더라도 같은 Task 안에서 지운다(프로젝트 규약 요약).
+- **노션 측 준비(사용자)**: Passages DB에 `Theme` select 속성(옵션 `default`, `hanji`)을 추가하고 애국가 예문에 `hanji`를 지정한다. 검증 중 바꾼 값(빈 값, 임의 문자열)은 테스트 후 원복한다. README의 노션 설정 가이드에 `Theme` 속성을 추가한다(Task 022).
+
+- **Task 022: 예문 스킨 타입·노션 `Theme` 매핑·스킨 결정 규칙 구현** - 우선순위
+  - 관련: F016, S8, PRD 5장(Passages `Theme`, 매핑 규칙), 6장(`filter_properties`, 캐시 태그)
+  - 의존: 011 (023과 병렬 가능. `PassageSkin` 타입을 먼저 커밋하면 023이 바로 쓸 수 있다)
+  - 영향 파일: `src/types/passage.ts`, `src/lib/notion/passages.ts`(`PASSAGE_PROPERTY_NAMES`), `src/lib/notion/mappers.ts`, 신규 `src/lib/passages/skin.ts`(순수 함수, 위치는 `src/lib/passages/`의 기존 순수 함수 관례를 따름), `README.md`(노션 설정 가이드)
+  - 구현 사항
+    - `src/types/passage.ts`에 `PassageSkin = "default" | "hanji"` 타입과 허용 값 상수를 추가하고 `PassageSummary`에 필수 필드 `skin: PassageSkin` 추가(`Passage`는 교차 타입이라 자동 포함)
+    - `src/lib/passages/skin.ts`에 순수 함수 `resolveSkin(raw: unknown): PassageSkin` 구현: 정확히 `"hanji"`만 `hanji`, 그 외(`"default"`, 빈 문자열, `null`/`undefined`, 모르는 문자열, 문자열 아닌 값)는 `default`. 대소문자·공백 허용 여부는 구현 시 결정해 주석과 이 Task 결과에 기록(권장: 노션 select 옵션 값과 정확히 일치만 허용)
+    - `mappers.ts`의 `toPassageSummary`에서 `Theme`(select)를 읽어 `resolveSkin`으로 `skin`을 채움. `Theme` 속성이 없거나 select가 아니어도 행을 제외하지 않고 경고 로그도 남기지 않음(모르는 값만 개발 로그 1줄 허용 여부는 구현 시 결정)
+    - `passages.ts`의 `PASSAGE_PROPERTY_NAMES`에 `"Theme"` 추가. 캐시 태그는 기존 `passages` 그대로(별도 태그 없음, PRD 6장)
+    - `PassageSummary`를 만드는 다른 코드(테스트용 객체, 필터·정렬 함수 호출부)가 `skin` 누락으로 타입 오류가 나면 모두 정리
+    - README 노션 설정 가이드의 Passages 속성 표에 `Theme`(select, `default`/`hanji`, 선택) 추가
+  - 수용 기준
+    - [ ] `npx tsc --noEmit`, `npm run lint` 통과
+    - [ ] `Theme`이 `hanji`인 행만 `skin: "hanji"`, 그 외 모든 경우 `skin: "default"`이고 매핑 결과 행 수가 `Theme` 추가 전과 같다
+    - [ ] 목록 조회 요청의 `filter_properties`에 `Theme`이 포함되고, 응답·RSC 페이로드에 토큰 문자열 0건(S4 회귀 없음)
+  - 테스트 체크리스트 (`resolveSkin`은 `tsx`로 직접 실행, 매핑·화면은 Playwright MCP)
+    - [ ] 정상: `tsx` → `resolveSkin("hanji")` → `"hanji"`, `resolveSkin("default")` → `"default"`
+    - [ ] 정상: 사용자가 애국가 `Theme=hanji` 지정 → `next build && next start` → `browser_navigate` `/` → 카드 수가 변경 전과 동일, 서버 로그·콘솔 오류 0건. `skin` 값은 `/passages/[id]`의 RSC 응답(`browser_network_request`)에서 `"skin":"hanji"`로 확인(스킨 렌더는 024에서 검증)
+    - [ ] 오류: `tsx` → `resolveSkin("Hanji")`, `resolveSkin("korean")`, `resolveSkin("")`, `resolveSkin(undefined)`, `resolveSkin(null)`, `resolveSkin(42)` → 모두 `"default"`, 예외 없음
+    - [ ] 오류: 사용자가 노션에서 `Theme`을 빈 값·임의 문자열로 바꿈 → 캐시 갱신 후 `/` 카드 수 동일, 해당 예문 RSC 응답에 `"skin":"default"`
+    - [ ] 엣지: `Theme` 속성이 없는 DB(사용자가 속성 이름을 잠시 바꾸거나 `filter_properties`에서 `Theme`을 일시 제외한 빌드) → 목록·상세 정상, 모든 예문 `"skin":"default"`, 오류 분류(`config`/`transient`)로 빠지지 않음
+    - [ ] 엣지: 노션에서 `Theme` 변경 후 `passages` 캐시 갱신 주기(`revalidate 300`) 경과 → 새 값 반영(Task 018의 S1 측정 방식: 캐시 생성 시각과 수정 시각 기록). 5분 대기가 어려우면 반영 시점은 미확인으로 기록
+    - [ ] 공통: 콘솔 오류 0건, 노션 토큰 비노출
+  - 테스트 결과: (미수행)
+
+- **Task 023: 한지 스킨 토큰·문양·폰트와 `SkinScope`(L2) 구현**
+  - 관련: F016, S8, PRD 8장(테마 스킨), 9장(폰트 의존성, 리스크), 10장 17·18
+  - 의존: 017(대비 측정 방식 재사용), 022의 `PassageSkin` 타입만(그 외 노션 연동 없이 검증)
+  - 영향 파일: `src/app/globals.css`(`[data-skin="hanji"]`, `.dark [data-skin="hanji"]`), 신규 `src/components/common/skin-scope.tsx`(L2), 신규 SVG 문양(컴포넌트로 둘 경우 `src/components/common/` 아래, 정적 파일이면 `public/` — 구현 시 결정), 폰트 정의 모듈(타이핑 라우트에서만 import되는 위치. 예: `src/app/passages/[id]/_components/` 아래 또는 `SkinScope` 내부 — 구현 시 결정해 기록)
+  - 구현 사항
+    - **착수 전 문서 확인**: `node_modules/next/dist/docs/01-app/01-getting-started/13-fonts.md`와 `node_modules/next/dist/docs/01-app/03-api-reference/02-components/font.md`의 `subsets`·`preload`·`variable`·`fallback`·`adjustFontFallback`·`display` 항목을 읽고 확인한 내용(특히 한글 폰트에서 `subsets`와 preload가 어떻게 동작하는지)을 결과에 기록. `globals.css`의 `@theme inline`·`@custom-variant dark` 구조도 확인
+    - 폰트: Gowun Batang과 Hahmlet 중 하나를 `next/font/google`로 정의(`variable`로 CSS 변수 노출, 굵기 1~2개, `fallback`에 시스템 명조/세리프 지정). 두 후보의 파일 수·전송 크기를 비교해 선택하고 PRD 10장 18의 결정 근거로 기록(PRD 수정은 사용자 승인 후)
+    - 토큰: `globals.css`에 `[data-skin="hanji"]`(라이트)와 `.dark [data-skin="hanji"]`(다크) 블록을 추가해 배경·전경·muted·border·카드와 판정 토큰 `--typing-*` 7종을 오방색/단청 기반 oklch 값으로 재정의. `.dark`가 `html`에 붙고 `data-skin`이 하위 요소에 붙는 구조에서 명시도가 의도대로 이기는지 확인
+    - 문양: 직접 그린 SVG(예: 단청 모서리 문양, 구름 문양) 1~3종을 장식 영역(테두리, 모서리, 제목 주변)에만 배치, `aria-hidden`, 색은 `currentColor` 또는 스킨 토큰으로 다크에서도 맞춤. 글자 뒤 배경에는 두지 않음
+    - `SkinScope`(L2, `src/components/common/skin-scope.tsx`): props `skin: PassageSkin`, `children`. `skin === "hanji"`면 루트 요소에 `data-skin="hanji"`와 폰트 변수 클래스를 붙이고, `default`면 속성 없이 렌더. 서버 컴포넌트로 둘 수 있는지(025의 토글과 결합 방식 포함) 구현 시 결정
+    - 입력 줄과 예문 줄이 같은 폰트를 쓰도록 스킨 범위 안에서 `font-mono`(`typing-board.tsx`의 `ol`과 입력창)를 대체하는 방식 결정(토큰 재정의 또는 스킨 범위 클래스). `typing-board.tsx` 수정이 필요하면 024에서 함께 반영
+    - 애니메이션·전환 효과를 쓰면 `prefers-reduced-motion: reduce`에서 끔
+  - 수용 기준
+    - [ ] 라이트/다크 × 한지 스킨에서 판정 토큰 7종과 본문·muted·버튼 텍스트 대비가 모두 4.5:1 이상(Task 017 방식: `getComputedStyle` 색을 canvas로 sRGB 변환, 조상 배경 알파·`opacity` 합성, WCAG 상대 휘도)이고 측정표를 결과에 기록
+    - [ ] 문양·폰트·토큰이 `data-skin="hanji"` 범위 밖(헤더, 푸터)에 영향을 주지 않는다
+    - [ ] `npx tsc --noEmit`, `npm run lint`, `npm run build` 통과, 임시 검증 코드 0건
+  - 테스트 체크리스트 (Playwright MCP, `browser_evaluate`로 기존 타이핑 화면 루트에 `data-skin="hanji"`를 부여하거나 `SkinScope`를 하드코딩한 임시 빌드로 검증 — 임시 코드는 Task 안에서 제거)
+    - [ ] 정상: `browser_evaluate` → 스킨 범위의 `--typing-correct` 등 7종 `getComputedStyle` → 기본 테마와 다른 한지 값. 라이트·다크(`browser_emulate_media` 또는 `.dark` 토글) 각각 측정표 작성, 전부 4.5:1 이상
+    - [ ] 정상: `browser_take_screenshot` → 라이트·다크 × 한지 스킨 타이핑·결과 화면 4장, 문양이 장식 영역에만 있고 글자와 겹치지 않음
+    - [ ] 오류: 폰트 로드 실패(`browser_run_code_unsafe`로 `fonts.gstatic.com`/`/_next/static/media` 폰트 요청 차단) → `fallback` 폰트로 표시, 글자 누락·레이아웃 깨짐 없음, 콘솔 오류는 차단된 리소스 외 0건
+    - [ ] 엣지: `browser_resize` 375px → 한지 스킨 타이핑·결과 화면 `scrollWidth ≤ innerWidth`, 오버플로 요소 0(문양 SVG 포함)
+    - [ ] 엣지: `browser_emulate_media` `reducedMotion: reduce` → 스킨 애니메이션·전환 0건(`getAnimations()` 길이 0 또는 `animation-name: none`)
+    - [ ] 엣지(PRD 10장 18): `browser_network_requests` → 한글 폰트 파일 수·전송 크기, `<link rel="preload" as="font">` 존재 여부와 개수 기록. 목록(`/`)에서는 스킨 폰트 요청 0건
+    - [ ] 엣지: 헤더·푸터의 글자색·배경색·폰트가 스킨 적용 전후 동일(`getComputedStyle` 비교)
+    - [ ] 공통: 콘솔 오류 0건
+  - 테스트 결과: (미수행)
+
+- **Task 024: 타이핑·결과 화면 스킨 연동 및 E2E 검증**
+  - 관련: F016, S8(최종), S2·S3·S5·S7 회귀
+  - 의존: 022, 023
+  - 영향 파일: `src/app/passages/[id]/_components/passage-screen.tsx`(정상 분기에서만 `SkinScope`로 감쌈), `typing-screen.tsx`·`result-view.tsx`(스킨 범위 안에서 결과 뷰 유지), `typing-board.tsx`(필요 시 `font-mono` 대체), `src/app/passages/[id]/loading.tsx`(로딩 화면은 기본 테마 유지 여부 확인)
+  - 구현 사항
+    - `passage-screen.tsx`의 정상 분기에서 `passage.skin`(022)을 `SkinScope`(023)에 넘겨 `PageHeader`·`TypingScreen`(입력 화면과 결과 뷰)을 감쌈. 오류·빈 상태·없는 예문 분기, `not-found.tsx`, `error.tsx`, `loading.tsx`는 감싸지 않음
+    - 서버 렌더 HTML에 `data-skin`이 포함되어 첫 페인트부터 스킨이 적용되도록 함(클라이언트 effect로 속성을 붙이지 않음)
+    - 결과 뷰 전환·[다시 도전]·Esc 초기화 후에도 같은 스킨 유지, [다음 예문]으로 다른 `Theme` 예문으로 이동하면 스킨이 그 예문 값으로 바뀜(`<Activity>`로 보존된 이전 화면의 스킨이 새 화면에 섞이지 않음)
+    - 스킨 폰트에서 입력 줄과 예문 줄 정렬 확인, 어긋나면 023에서 정한 방식으로 `typing-board.tsx` 조정
+    - (선택, PRD 4장) 목록 카드에 `skin === "hanji"` 배지 표시 여부 결정. 구현하면 기본 테마 유지, `Badge`(L1)만 사용
+  - 수용 기준
+    - [ ] S8: `Theme` `hanji`/`default`/빈 값/임의 문자열 4종 각각에서 타이핑·결과 화면 루트의 `data-skin` 기대값과 일치, 목록·헤더에는 `data-skin` 없음
+    - [ ] 스킨 on(애국가)·off(창세기)에서 S5·S7 완주와 S3(입력 → 갱신 100ms 이내) 회귀 없음
+    - [ ] `npx tsc --noEmit`, `npm run lint`, `npm run build` 통과
+  - 테스트 체크리스트 (Playwright MCP, `next build && next start`, 노션 실호출)
+    - [ ] 정상: `browser_navigate` 애국가 → `browser_evaluate` `document.querySelector('[data-skin]')?.dataset.skin` → `"hanji"`, 해당 요소가 `PageHeader`와 타이핑 보드를 포함. 마지막 줄 Enter로 결과 뷰 진입 → 같은 값 유지
+    - [ ] 정상: `browser_navigate` 창세기 1장 → `[data-skin]` 요소 0개, 31줄 완주 → 결과 뷰도 0개
+    - [ ] 정상: `/` 목록 → `[data-skin]` 0개, 헤더 계산 스타일이 스킨 예문 화면의 헤더와 동일
+    - [ ] 오류: 없는 예문(`/passages/not-exist-id`), 본문 없음 예문, 틀린 토큰 서버(환경 변수만 덮어쓰기, `.env` 불수정) → 오류 화면에 `[data-skin]` 0개
+    - [ ] 오류: 사용자가 애국가 `Theme`을 빈 값·임의 문자열로 바꿈 → 캐시 갱신 후 `[data-skin]` 0개, 화면 정상. 원복 후 다시 `hanji`
+    - [ ] 엣지: `browser_emulate_media` 다크 + 애국가 → `html.dark`와 `data-skin="hanji"` 공존, 다크 한지 토큰 값 적용(023 측정표와 일치), 테마 토글로 라이트↔다크 전환 시 스킨 유지
+    - [ ] 엣지: 첫 로드 깜빡임 — 서버 HTML(`curl` 또는 `browser_network_request`의 문서 응답)에 `data-skin="hanji"` 포함, `first-paint` 시점에 속성 존재(Task 017 테마 깜빡임 측정 방식)
+    - [ ] 엣지: `browser_network_requests` → 스킨 폰트 요청이 `/passages/[id]`(스킨 예문)에서만 발생, `/`와 오류 화면에서 0건. 기본 스킨 예문에서의 요청 여부를 기록(폰트 정의 위치에 따라 달라짐)
+    - [ ] 엣지: `font-mono` 대체 후 입력 줄과 예문 줄 정렬 — 같은 글자 수에서 두 줄의 글자 폭·`font-family` 계산값 동일, 375px에서 오버플로 0
+    - [ ] 엣지: 애국가(`hanji`) → [다음 예문] → `Theme` 다른 예문 → 스킨이 새 예문 값으로 바뀜, 뒤로 가기 후 다시 `hanji`
+    - [ ] 회귀(S2·S3): 스킨 on/off 각각에서 `browser_evaluate` 합성 composition 이벤트 시나리오와 Enter 줄 전환(조합 중 Enter 보류 포함) 정상, 1600타 주입 시 입력 이벤트 100ms 이내·Long Task 0건. 실제 한글 IME는 사용자 수동 확인(겹받침 `닭`·이중모음 `왜`·빠른 연타, 스킨 on/off 각 1회)
+    - [ ] 공통: 콘솔 오류 0건, 노션 토큰 비노출
+  - 테스트 결과: (미수행)
+
+- **Task 025: 테마 효과 끄기 토글 구현 (F017, 선택)**
+  - 관련: F017, PRD 4장(타이핑 화면 사용자 행동), 8장
+  - 의존: 024
+  - 영향 파일: `src/app/passages/[id]/_components/`(토글 컴포넌트 신규 또는 `typing-screen.tsx`), `src/components/common/skin-scope.tsx`(끄기 상태 반영 방식에 따라), 필요 시 shadcn `toggle`/`switch`를 `npx shadcn@latest add`로 추가(현재 `src/components/ui/`에 없음)
+  - 구현 사항
+    - usehooks-ts `useLocalStorage`로 끄기 상태 저장(키 이름은 구현 시 결정해 기록). 읽기·쓰기·파싱 실패는 무시하고 스킨 켜짐 유지
+    - 타이핑 화면에 토글 컨트롤 1개(예: "테마 효과 끄기"), 스킨 예문(`skin === "hanji"`)에서만 노출. 설정 화면이나 다른 설정 항목은 두지 않음
+    - 끄기 선택 시 `data-skin`을 적용하지 않음(문양·폰트 포함). 결과 뷰에도 같은 상태 적용
+    - 하이드레이션 불일치 없이 동작(서버는 스킨 켜짐으로 렌더하고 클라이언트 마운트 후 저장값 반영. 끄기 사용자는 첫 로드에 잠시 스킨이 보일 수 있으므로 허용 여부를 결과에 기록)
+    - 토글 조작이 입력창 포커스와 진행 중 세션(현재 줄, 경과 시간)을 초기화하지 않음, 토글은 키보드로 조작 가능하고 `aria-pressed` 또는 `role="switch"` 상태를 가짐
+  - 수용 기준
+    - [ ] 끄기 선택이 새로고침·다른 스킨 예문에서도 유지된다
+    - [ ] localStorage 차단 환경에서 오류 없이 스킨이 켜진 상태로 동작한다
+    - [ ] `npx tsc --noEmit`, `npm run lint` 통과
+  - 테스트 체크리스트 (Playwright MCP)
+    - [ ] 정상: 애국가 → 토글 클릭 → `[data-skin]` 0개, 스킨 폰트·문양 미표시 → 새로고침 → 끄기 유지 → 다시 켜기 → `data-skin="hanji"`
+    - [ ] 정상: 끄기 상태에서 완주 → 결과 뷰도 `[data-skin]` 0개
+    - [ ] 오류: `browser_evaluate`로 저장 키에 손상된 JSON 주입 → 오류 없이 스킨 켜짐, 토글로 다시 저장 가능
+    - [ ] 오류: `Storage.prototype.setItem`/`getItem`을 throw로 대체 → 스킨 켜짐 유지, 토글 클릭해도 콘솔 오류 0건(화면 상태만 바뀌는지 여부를 기록)
+    - [ ] 엣지: 기본 스킨 예문(창세기)에서는 토글 미노출
+    - [ ] 엣지: 입력 도중 토글 → 현재 줄·입력값·경과 시간 유지, 입력창 포커스 복구 여부 기록
+    - [ ] 엣지: 키보드만으로 토글 조작(Tab·Space/Enter), 하이드레이션 경고 0건
+    - [ ] 공통: 콘솔 오류 0건
   - 테스트 결과: (미수행)
