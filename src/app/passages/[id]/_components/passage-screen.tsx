@@ -6,6 +6,7 @@ import { Container } from "@/components/common/container";
 import { PageHeader } from "@/components/common/page-header";
 import { PassageErrorState } from "@/components/common/passage-error-state";
 import { PassageRetryButton } from "@/components/common/passage-retry-button";
+import { SkinScope } from "@/components/common/skin-scope";
 import { Button } from "@/components/ui/button";
 import {
   buildFilterQuery,
@@ -119,18 +120,21 @@ export async function PassageScreen({
     }
   }
 
+  // 스킨은 정상 분기에서만 감싼다(오류·빈 상태·notFound 화면에는 적용하지 않는다).
   return (
-    <Container className="pb-16">
-      <PageHeader
-        title={passage.title}
-        description={`${passage.category} · ${passage.lines.length}줄`}
-      />
-      <TypingScreen
-        passage={passage}
-        nextHref={nextHref}
-        hasNext={hasNext}
-        listHref={listHref}
-      />
-    </Container>
+    <SkinScope skin={passage.skin}>
+      <Container className="pb-16">
+        <PageHeader
+          title={passage.title}
+          description={`${passage.category} · ${passage.lines.length}줄`}
+        />
+        <TypingScreen
+          passage={passage}
+          nextHref={nextHref}
+          hasNext={hasNext}
+          listHref={listHref}
+        />
+      </Container>
+    </SkinScope>
   );
 }
