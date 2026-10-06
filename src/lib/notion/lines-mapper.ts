@@ -68,11 +68,6 @@ function toNumberedLine(page: PageObjectResponse): NumberedLine | null {
   };
 }
 
-/** 한 행을 Line으로 변환한다. 제외 대상이면 null. */
-export function toLine(page: PageObjectResponse): Line | null {
-  return toNumberedLine(page)?.line ?? null;
-}
-
 /** 행 배열을 매핑하고 Line Number 기준으로 안정 정렬한다. */
 export function mapLineRows(pages: PageObjectResponse[]): Line[] {
   const numbered = pages.flatMap((page) => {
