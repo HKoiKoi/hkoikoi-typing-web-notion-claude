@@ -63,9 +63,12 @@ export async function PassageScreen({
             kind="empty"
             description="노션 Lines DB에 이 예문의 줄을 추가하세요"
             action={
-              <Button asChild variant="outline">
-                <Link href="/">예문 목록으로</Link>
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <PassageRetryButton label="다시 확인" />
+                <Button asChild variant="outline">
+                  <Link href="/">예문 목록으로</Link>
+                </Button>
+              </div>
             }
           />
         );
@@ -74,7 +77,19 @@ export async function PassageScreen({
           <PassageErrorState kind="transient" action={<PassageRetryButton />} />
         );
       case "config":
-        return <PassageErrorState kind="config" />;
+        return (
+          <PassageErrorState
+            kind="config"
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <PassageRetryButton label="다시 확인" />
+                <Button asChild variant="outline">
+                  <Link href="/">예문 목록으로</Link>
+                </Button>
+              </div>
+            }
+          />
+        );
     }
   }
 

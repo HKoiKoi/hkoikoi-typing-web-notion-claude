@@ -25,15 +25,7 @@ export function PassageBrowser({ passages }: PassageBrowserProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  if (passages.length === 0) {
-    return (
-      <EmptyState
-        title="아직 불러온 예문이 없습니다"
-        description="노션 DB에 예문 행을 추가하세요. 추가한 예문이 이곳에 표시됩니다."
-      />
-    );
-  }
-
+  // 0건은 loadPassageSummaries가 empty로 먼저 걸러 PassageListSection이 안내한다.
   const filter = parseFilter(searchParams);
   const visible = sortPassages(filterPassages(passages, filter));
 

@@ -20,12 +20,21 @@ export async function PassageListSection() {
     return (
       <PassageErrorState
         kind="empty"
-        description="노션 DB에 예문 행을 추가하세요. 추가한 예문이 이곳에 표시됩니다."
+        description="노션 DB에 예문 행을 추가하세요. 추가한 예문은 반영까지 몇 분 걸릴 수 있습니다."
+        action={<PassageRetryButton label="다시 확인" />}
       />
     );
   }
   if (result.kind === "transient") {
     return <PassageErrorState kind="transient" action={<PassageRetryButton />} />;
+  }
+  if (result.kind === "config") {
+    return (
+      <PassageErrorState
+        kind="config"
+        action={<PassageRetryButton label="다시 확인" />}
+      />
+    );
   }
   return <PassageErrorState kind={result.kind} />;
 }

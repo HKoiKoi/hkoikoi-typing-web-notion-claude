@@ -27,7 +27,8 @@ const ERROR_CONTENT: Record<PassageErrorKind, ErrorContent> = {
     icon: TriangleAlert,
     title: "노션 연결 설정을 확인해 주세요",
     description:
-      "노션 토큰, 데이터베이스 ID, 연결(권한) 설정에 문제가 있어 예문을 불러올 수 없습니다.",
+      "노션 토큰, 데이터베이스(data source) ID, 통합 연결 권한, 프로퍼티 이름·타입 중 하나에 문제가 있습니다. 노션에서 고쳤다면 [다시 확인]을 눌러 주세요. 환경 변수(NOTION_TOKEN 등)를 수정했다면 서버를 다시 시작해야 반영됩니다.",
+    // 재확인은 이벤트 핸들러가 필요하므로 호출 측이 action으로 주입한다.
     action: null,
   },
   transient: {
