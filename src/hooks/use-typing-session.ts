@@ -124,6 +124,8 @@ export function useTypingSession(lines: Line[]): UseTypingSessionResult {
       }),
     onKeyDown: (e) => {
       if (e.key === "Escape") {
+        // 한글 조합 중 Esc는 조합 취소 용도이므로 전체 초기화로 이어지지 않게 한다.
+        if (e.nativeEvent.isComposing || e.keyCode === 229) return;
         e.preventDefault();
         dispatch({ kind: "reset" });
         return;
