@@ -224,6 +224,89 @@
   font-family: inherit;
 }
 
+/*
+ * 성경책 스킨 (Task 026, F016). 한지 스킨과 같은 구조로 data-skin="bible" 범위 안에서만 적용된다.
+ * 라이트는 양피지 + 짙은 가죽 갈색 + 금박, 다크는 촛불 아래 짙은 갈색 배경 + 따뜻한 크림 글자 + 금색이다.
+ * 질감은 코드 생성(외부 이미지 없음)이며 배경에만 깔린다: 섬유결 -> 종이결(고주파) -> 얼룩(저주파).
+ * 질감 알파 상한(라이트 .10/.08/.14, 다크 .05/.04/.06)이 세 겹 동시 최대로 겹친 최악 배경에서도
+ * 본문·muted·판정 7종·공백 오타 배경 위 incorrect가 4.5:1 이상이 되도록 대비를 계산해 색을 정했다.
+ */
+[data-skin="bible"] {
+  --background: oklch(0.93 0.04 85);
+  --foreground: oklch(0.2 0.03 55);
+  --card: oklch(0.95 0.035 85);
+  --card-foreground: oklch(0.2 0.03 55);
+  --popover: oklch(0.95 0.035 85);
+  --popover-foreground: oklch(0.2 0.03 55);
+  --primary: oklch(0.32 0.06 50);
+  --primary-foreground: oklch(0.96 0.03 85);
+  --secondary: oklch(0.9 0.045 82);
+  --secondary-foreground: oklch(0.24 0.04 55);
+  --muted: oklch(0.9 0.045 82);
+  --muted-foreground: oklch(0.34 0.04 60);
+  --accent: oklch(0.88 0.05 82);
+  --accent-foreground: oklch(0.24 0.04 55);
+  --border: oklch(0.78 0.06 75);
+  --input: oklch(0.78 0.06 75);
+  --ring: oklch(0.55 0.1 80);
+  --skin-accent: oklch(0.62 0.12 85);
+  --skin-accent-2: oklch(0.38 0.07 45);
+  --typing-correct: oklch(0.31 0.09 150);
+  --typing-incorrect: oklch(0.34 0.15 25);
+  --typing-incorrect-space-bg: oklch(0.88 0.065 30);
+  --typing-pending: oklch(0.32 0.03 60);
+  --typing-current: oklch(0.3 0.09 250);
+  --typing-composing: oklch(0.32 0.08 70);
+  --typing-extra: oklch(0.34 0.12 330);
+  /* 양피지 질감. 알파 상한은 위 주석 참조. */
+  --bible-fibers-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='f' x='0' y='0' width='100%' height='100%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .45' numOctaves='2' stitchTiles='stitch' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.28 0 0 0 0 0.14 0.25 0 0 0 -0.15'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E");
+  --bible-grain-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f' x='0' y='0' width='100%' height='100%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.12 0.2 0 0 0 -0.12'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E");
+  --bible-mottle-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='f' x='0' y='0' width='100%' height='100%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006' numOctaves='3' stitchTiles='stitch' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.4 0 0 0 0 0.15 0.35 0 0 0 -0.21'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E");
+  background-image: var(--bible-fibers-light), var(--bible-grain-light), var(--bible-mottle-light);
+  background-size: 480px 480px, 160px 160px, 480px 480px;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-bible), "Batang", "AppleMyungjo", "Noto Serif KR", serif;
+}
+
+.dark [data-skin="bible"] {
+  --background: oklch(0.2 0.025 55);
+  --foreground: oklch(0.93 0.04 85);
+  --card: oklch(0.25 0.03 55);
+  --card-foreground: oklch(0.93 0.04 85);
+  --popover: oklch(0.25 0.03 55);
+  --popover-foreground: oklch(0.93 0.04 85);
+  --primary: oklch(0.78 0.12 85);
+  --primary-foreground: oklch(0.2 0.025 55);
+  --secondary: oklch(0.3 0.03 55);
+  --secondary-foreground: oklch(0.93 0.04 85);
+  --muted: oklch(0.3 0.03 55);
+  --muted-foreground: oklch(0.8 0.04 80);
+  --accent: oklch(0.33 0.035 55);
+  --accent-foreground: oklch(0.93 0.04 85);
+  --border: oklch(0.5 0.06 75 / 60%);
+  --input: oklch(0.5 0.06 75 / 70%);
+  --ring: oklch(0.72 0.1 85);
+  --skin-accent: oklch(0.78 0.13 85);
+  --skin-accent-2: oklch(0.62 0.09 50);
+  --typing-correct: oklch(0.82 0.12 150);
+  --typing-incorrect: oklch(0.82 0.12 25);
+  --typing-incorrect-space-bg: oklch(0.31 0.085 30);
+  --typing-pending: oklch(0.78 0.03 80);
+  --typing-current: oklch(0.82 0.09 245);
+  --typing-composing: oklch(0.88 0.12 90);
+  --typing-extra: oklch(0.82 0.11 330);
+  --bible-fibers-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='f' x='0' y='0' width='100%' height='100%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .45' numOctaves='2' stitchTiles='stitch' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.85 0 0 0 0 0.72 0 0 0 0 0.5 0.12 0 0 0 -0.07'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E");
+  --bible-grain-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f' x='0' y='0' width='100%' height='100%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.8 0 0 0 0 0.65 0.1 0 0 0 -0.06'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E");
+  --bible-mottle-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480'%3E%3Cfilter id='f' x='0' y='0' width='100%' height='100%'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006' numOctaves='3' stitchTiles='stitch' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.8 0 0 0 0 0.65 0 0 0 0 0.4 0.15 0 0 0 -0.09'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23f)'/%3E%3C/svg%3E");
+  background-image: var(--bible-fibers-dark), var(--bible-grain-dark), var(--bible-mottle-dark);
+}
+
+/* 스킨 범위에서는 font-mono(입력 줄·예문 줄)도 스킨 폰트를 상속해 두 줄이 같은 폰트를 쓴다. */
+[data-skin="bible"] .font-mono {
+  font-family: inherit;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

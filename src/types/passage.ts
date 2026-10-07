@@ -17,7 +17,7 @@ export type Difficulty = "Easy" | "Medium" | "Hard";
  * 예문 스킨. 노션 Passages DB의 Theme select 값으로 결정한다 (PRD 5장, F016).
  * 허용 값 목록은 이 상수 하나만 소스로 둔다. 결정 규칙은 passages/skin.ts의 resolveSkin.
  */
-export const PASSAGE_SKINS = ["default", "hanji"] as const;
+export const PASSAGE_SKINS = ["default", "hanji", "bible"] as const;
 export type PassageSkin = (typeof PASSAGE_SKINS)[number];
 
 /** 목록용 예문 요약 (Passages DB 프로퍼티만). */

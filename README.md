@@ -61,7 +61,7 @@ npm run lint
 | `Order` | number | X | 같은 분류 안의 정렬 순서 (장 번호 등). 비우면 `Title` 순 |
 | `Difficulty` | select (`Easy` / `Medium` / `Hard`) | X | 비우면 미지정 |
 | `Tags` | multi_select | X | 비우면 태그 없음 |
-| `Theme` | select (`default` / `hanji`) | X | `hanji`만 한국 테마 스킨 적용. 행의 값은 비워도 되고 비우거나 그 외 값이면 기본 테마 (행은 제외되지 않음). 단 **속성(열) 자체는 DB에 만들어 두어야** 합니다. 없으면 목록 조회가 실패합니다 |
+| `Theme` | select (`default` / `hanji` / `bible`) | X | `hanji`(한국 테마), `bible`(성경책 테마)만 스킨이 적용됩니다. select 옵션은 **소문자 `hanji`·`bible`과 정확히 일치**하게 노션에서 직접 추가해야 하며(`Bible` 등 대소문자가 다르면 적용되지 않음), 행의 값은 비워도 되고 비우거나 그 외 값이면 기본 테마 (행은 제외되지 않음). 단 **속성(열) 자체는 DB에 만들어 두어야** 합니다. 없으면 목록 조회가 실패합니다 |
 | `Enabled` | checkbox | X | 체크 해제한 행은 목록에서 제외. 프로퍼티가 없으면 전부 사용 |
 
 ### Lines DB 프로퍼티

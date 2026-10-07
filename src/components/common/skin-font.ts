@@ -1,4 +1,4 @@
-import { Gowun_Batang } from "next/font/google";
+import { Gowun_Batang, Noto_Serif_KR } from "next/font/google";
 
 /**
  * 한지 스킨 전용 한글 명조 폰트 (Task 023, PRD 10장 18).
@@ -15,4 +15,20 @@ export const hanjiFont = Gowun_Batang({
   preload: false,
   variable: "--font-hanji",
   fallback: ["Batang", "AppleMyungjo", "Noto Serif KR", "serif"],
+});
+
+/**
+ * 성경책 스킨 전용 한글 명조 폰트 (Task 026).
+ * skin-scope.tsx에서만 import 하므로 SkinScope를 쓰는 타이핑 라우트에서만 @font-face가 포함된다.
+ * - 선택: Noto Serif KR. 성경 본문 조판에 흔한 단정한 명조체다.
+ * - subsets/preload: hanjiFont와 같은 이유로 latin만 지정하고 preload는 끈다(한글은 unicode-range 지연 로드).
+ * - variable: CSS 변수 --font-bible 로 노출하고 실제 적용은 globals.css의 [data-skin="bible"]이 한다.
+ */
+export const bibleFont = Noto_Serif_KR({
+  weight: ["400", "700"],
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  variable: "--font-bible",
+  fallback: ["Batang", "AppleMyungjo", "Georgia", "serif"],
 });

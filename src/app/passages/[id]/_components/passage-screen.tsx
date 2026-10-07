@@ -124,7 +124,7 @@ export async function PassageScreen({
   return (
     <Container>
       <SkinScope skin={passage.skin}>
-        <div className={passage.skin === "hanji" ? "px-4 pb-16 sm:px-6" : "pb-16"}>
+        <div className={passage.skin !== "default" ? "px-4 pb-16 sm:px-6" : "pb-16"}>
           <PageHeader
             title={passage.title}
             description={`${passage.category} · ${passage.lines.length}줄`}
