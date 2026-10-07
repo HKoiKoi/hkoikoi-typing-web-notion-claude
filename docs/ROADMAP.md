@@ -88,7 +88,7 @@
 
 ## 현재 상태 (2026-10-06 기준)
 
-- **MVP 이후 Phase 5(예문별 한국 테마 스킨, Task 022~025, F016·F017·S8) 추가(2026-10-06). 착수 순서는 022·023(병렬 가능) → 024 → 025(선택).** 선택 Task 019~021과는 서로 독립이다. **2026-10-07: 성경책(`bible`) 스킨 Task 026(구현)·027(E2E·검증) 추가(미착수). 한지 스킨 구조를 재사용하므로 023·024 완료 후 착수하며 Task 025와는 독립이다.**
+- **MVP 이후 Phase 5(예문별 한국 테마 스킨, Task 022~025, F016·F017·S8) 추가(2026-10-06). 착수 순서는 022·023(병렬 가능) → 024 → 025(선택).** 선택 Task 019~021과는 서로 독립이다. **2026-10-07: 성경책(`bible`) 스킨 Task 026(구현)·027(E2E·검증) 추가(026은 2026-10-07 완료, 027 미착수). 한지 스킨 구조를 재사용하므로 023·024 완료 후 착수하며 Task 025와는 독립이다.**
 - **MVP 필수 Task(001~018) 구현·검증 완료. 다음은 선택 Task 019·020.** Task 018은 사용자가 건너뛴 항목(S2 수동 표, 스크린리더, 실기기 Performance) 때문에 ✅를 보류했다(아래 Task 018 참고). 아래 목록은 Task별 산출물 이력이며, 이력에 나오는 `/dev/*`·`src/lib/mock`·`dev-probe.ts`·`dummy-states.ts`·스파이크 `lines.ts`는 Task 018에서 제거되어 더 이상 없다.
 - 완료: Phase 0(Task 001, commit `5b0868c`)과 Phase 1의 Task 002~006 전부, Phase 2의 Task 007~009, Phase 3의 Task 010. 다음 Task: 011(노션 데이터 연동)과 013(입력 엔진 훅)은 서로 병렬로 시작할 수 있다
 - 이미 존재하여 다시 만들지 않는 것
@@ -867,20 +867,44 @@ MVP 필수 Task가 모두 끝난 뒤 착수한다. 각 Task는 독립적이며 �
     - `line-chars.tsx`, `typing-board.tsx`는 `--typing-*` 토큰만 쓰므로 수정하지 않는다(변경 0건을 `git diff`로 확인)
     - `README.md`: 노션 설정 가이드의 Passages `Theme` 속성 표에 `bible` 추가, 사용자가 `Theme` select에 `bible` 옵션을 직접 추가해야 하며 대소문자가 일치해야 한다고 명시
   - 수용 기준
-    - [ ] 라이트/다크 × bible 스킨에서 판정 토큰 7종과 본문·muted·버튼 텍스트 대비가 모두 4.5:1 이상이고 측정표를 결과에 기록(Task 017 방식). 공백 오타 배경 위 incorrect가 최솟값이 되기 쉬우므로 특히 확인
-    - [ ] 한지 스킨 회귀 없음(토큰 값·문양·폰트·화면 불변)
-    - [ ] `npx tsc --noEmit`, `npm run lint`, `npm run build` 통과, 임시 검증 코드 0건
-    - [ ] 목록(`/`) 청크에 Noto Serif KR 폰트 0건
+    - [x] 라이트/다크 × bible 스킨에서 판정 토큰 7종과 본문·muted·버튼 텍스트 대비가 모두 4.5:1 이상이고 측정표를 결과에 기록(Task 017 방식). 공백 오타 배경 위 incorrect가 최솟값이 되기 쉬우므로 특히 확인
+    - [x] 한지 스킨 회귀 없음(토큰 값·문양·폰트·화면 불변)
+    - [x] `npx tsc --noEmit`, `npm run lint`, `npm run build` 통과, 임시 검증 코드 0건
+    - [x] 목록(`/`) 청크에 Noto Serif KR 폰트 0건
   - 테스트 체크리스트 (Playwright MCP, `next build && next start`. 노션 연동 없는 정적 검증은 `browser_evaluate`로 타이핑 화면 루트에 `data-skin="bible"`을 부여하거나 임시 하드코딩 빌드로 수행하고 임시 코드는 Task 안에서 제거)
-    - [ ] 정적: `npx tsc --noEmit`, `npm run lint`, `npm run build`, `resolveSkin("bible")` → `"bible"`, `resolveSkin("Bible")`·`resolveSkin("")`·`resolveSkin(undefined)` → `"default"`, `resolveSkin("hanji")` 불변
-    - [ ] 정상: `browser_evaluate` → bible 스킨 범위의 `--typing-*` 7종 `getComputedStyle` 값이 기본 테마·한지와 다름. 라이트·다크 각각 대비 측정표 작성, 전부 4.5:1 이상
-    - [ ] 정상: `browser_take_screenshot` → 라이트·다크 × bible 타이핑·결과 화면, 장식이 모서리·구분선에만 있고 글자와 겹치지 않음
-    - [ ] 회귀: 한지 스킨 라이트·다크 토큰 값과 화면이 Task 023·024 기록과 동일, `data-skin="hanji"` 동작 불변
-    - [ ] 엣지: 빌드 산출물 확인 → Noto Serif KR `@font-face` CSS가 `SkinScope`를 쓰는 라우트 청크에만 있고 목록(`/`) 청크에는 0건, `<link rel=preload as=font>` 0개
-    - [ ] 엣지: 헤더·푸터의 글자색·배경색·폰트가 스킨 적용 전후 동일
-    - [ ] 공통: 콘솔 오류 0건, 노션 토큰 비노출
-  - 구현 상태: 미착수(2026-10-07 추가)
-  - 테스트 결과: (미수행)
+    - [x] 정적: `npx tsc --noEmit`, `npm run lint`, `npm run build`, `resolveSkin("bible")` → `"bible"`, `resolveSkin("Bible")`·`resolveSkin("")`·`resolveSkin(undefined)` → `"default"`, `resolveSkin("hanji")` 불변
+    - [x] 정상: `browser_evaluate` → bible 스킨 범위의 `--typing-*` 7종 `getComputedStyle` 값이 기본 테마·한지와 다름. 라이트·다크 각각 대비 측정표 작성, 전부 4.5:1 이상
+    - [x] 정상: `browser_take_screenshot` → 라이트·다크 × bible 타이핑·결과 화면, 장식이 모서리·구분선에만 있고 글자와 겹치지 않음
+    - [x] 회귀: 한지 스킨 라이트·다크 토큰 값과 화면이 Task 023·024 기록과 동일, `data-skin="hanji"` 동작 불변
+    - [x] 엣지: 빌드 산출물 확인 → Noto Serif KR `@font-face` CSS가 `SkinScope`를 쓰는 라우트 청크에만 있고 목록(`/`) 청크에는 0건, `<link rel=preload as=font>` 0개
+    - [x] 엣지: 헤더·푸터의 글자색·배경색·폰트가 스킨 적용 전후 동일
+    - [x] 공통: 콘솔 오류 0건, 노션 토큰 비노출
+  - 구현 상태: 완료(2026-10-07). `PASSAGE_SKINS`에 `bible` 추가(`resolveSkin` 무수정), `skin-font.ts`에 `bibleFont`(Noto Serif KR, `weight: ["400","700"]`, `preload: false`, `--font-bible`) 추가, `bible-ornaments.tsx`(`BibleCorner`·`BibleCross`) 신규, `SkinScope`를 `Record<Exclude<PassageSkin,"default">,{fontClass,Corner,Divider}>` 매핑으로 일반화(한지 DOM·클래스 동일, default는 속성 없는 `div`), `passage-screen.tsx` 패딩 조건을 `skin !== "default"`로 변경, `globals.css`에 bible 라이트·다크·`.font-mono` 블록(83줄 추가·삭제 0, 한지 블록 불변), `README.md` Theme 표 갱신. `line-chars.tsx`·`typing-board.tsx` diff 0건
+  - 테스트 결과: (2026-10-07) `tsc`·`lint`·`build` 통과, 임시 라우트(`/tmp-skin/[skin]`) 삭제 후 `git status` 임시 코드 0건. 임시 하드코딩 라우트를 `next build && next start`로 띄워 Playwright 검증(노션 연동 없는 정적 검증).
+    - **폰트 실측**: Noto Serif KR는 가변 폰트지만 `weight: ["400","700"]` 배열이 오류 없이 빌드됨(임시로 `layout.tsx`에 import해 확인 후 원복). 빌드 CSS에 `@font-face` 248개(400·700)가 `SkinScope` 라우트 청크에만 있고 목록(`/`) 청크에는 `@font-face` 0건(`/` CSS의 "Noto Serif KR" 1건은 기존 한지 `font-family` 폴백 이름 텍스트). `<link rel=preload as=font>` 0개. 두 폰트의 `@font-face`가 스킨 라우트에 함께 포함됨(Gowun Batang 190개 + Noto Serif KR 248개)
+    - **resolveSkin**: `bible`→`bible`, `Bible`·빈 값·`undefined`→`default`, `hanji`→`hanji`
+    - **토큰**: bible의 `--typing-*` 7종이 라이트·다크 모두 default·한지와 다름(`getComputedStyle`). 처음에는 `incorrect-space-bg`가 라이트는 한지, 다크는 default와 같은 값이어서 `oklch(0.88 0.065 30)`·`oklch(0.31 0.085 30)`로 바꿔 재측정(스크린샷 4장은 이 조정 직전 값으로 촬영, 명도 차이 약 1%). 한지 토큰은 `globals.css` 값 그대로 확인
+    - **대비**(스크래치패드 스크립트, OKLCH→sRGB→WCAG, 질감 3겹이 한 픽셀에서 동시에 최대 알파로 겹친 최악 배경 기준. 라이트 배경 #F4E6CA → 최악 #D2BC9A, 다크 #1F130B → 최악 #392A1B. 질감 알파 상한 라이트 .10/.08/.14, 다크 .05/.04/.06):
+
+| 항목 | 라이트 | 다크 |
+|---|---|---|
+| foreground | 9.89 | 11.20 |
+| muted-foreground | 6.46 | 7.36 |
+| typing-correct | 6.88 | 8.25 |
+| typing-incorrect | 6.63 | 7.28 |
+| typing-pending | 6.95 | 6.87 |
+| typing-current | 7.40 | 7.96 |
+| typing-composing | 7.00 | 9.59 |
+| typing-extra | 6.79 | 7.54 |
+| incorrect, 공백 오타 배경 위 | 5.74 | 5.45 |
+| 카드 글자 / 카드 | 15.71 | 13.09 |
+| primary 버튼 글자 / primary | 11.51 | 9.02 |
+| secondary 글자 / secondary | 12.29 | 11.17 |
+| muted-fg / muted | 8.80 | 7.34 |
+
+    - **스크린샷**: 라이트·다크 × 타이핑(줄 불일치·공백 오타 포함)·결과 4장 확인. 장식은 모서리 4곳과 하단 십자가 구분선에만 있고 글자와 겹치지 않음
+    - **엣지/공통**: 헤더·푸터의 글자색·배경색·폰트가 default·hanji·bible에서 동일, 콘솔 오류·경고 0건, 노션 토큰 패턴 0건. 미확인: 실제 노션 `Theme=bible` E2E, 375px·reduced-motion 정식 검증, 한글 IME 수동 확인은 Task 027 범위
+
 
 - **Task 027: 성경책 스킨 E2E·폰트·회귀 검증**
   - 관련: F016, S8(bible 최종), S2·S3·S5·S7 회귀 (Task 024의 검증 항목을 bible에 맞게 재수행)
