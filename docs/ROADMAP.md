@@ -921,26 +921,26 @@ MVP 필수 Task가 모두 끝난 뒤 착수한다. 각 Task는 독립적이며 �
     - 회귀(S2·S3·S5·S7): 스킨 bible·hanji·default 각각에서 합성 composition 이벤트와 Enter 줄 전환(조합 중 Enter 보류 포함), 1600타 주입 시 입력 이벤트 100ms 이내·Long Task 0건
     - 한글 IME 실입력(겹받침 `닭`·이중모음 `왜`·빠른 연타, bible 스킨 + 라이트/다크)은 사용자 수동 확인 몫이므로 미완료 항목으로 남기고, 사용자가 확인하기 전에는 Task를 완료 처리하지 않는다
   - 수용 기준
-    - [ ] S8: `Theme` `bible`/`hanji`/`default`/빈 값/임의 문자열 5종 각각에서 타이핑·결과 화면 루트의 `data-skin` 기대값과 일치(`bible`→`"bible"`, `hanji`→`"hanji"`, 나머지는 0개), 목록·헤더·오류 화면에는 `data-skin` 없음
-    - [ ] bible 스킨에서 S5·S7 완주와 S3(입력 → 갱신 100ms 이내) 회귀 없음, 한지·기본 스킨 회귀 없음
-    - [ ] 목록(`/`)에서 스킨 폰트 요청 0건, preload 링크 0개
-    - [ ] `npx tsc --noEmit`, `npm run lint`, `npm run build` 통과
+    - [x] S8: `Theme` `bible`/`hanji`/`default`/빈 값/임의 문자열 5종 각각에서 타이핑·결과 화면 루트의 `data-skin` 기대값과 일치(`bible`→`"bible"`, `hanji`→`"hanji"`, 나머지는 0개), 목록·헤더·오류 화면에는 `data-skin` 없음
+    - [x] bible 스킨에서 S5·S7 완주와 S3(입력 → 갱신 100ms 이내) 회귀 없음, 한지·기본 스킨 회귀 없음
+    - [x] 목록(`/`)에서 스킨 폰트 요청 0건, preload 링크 0개
+    - [x] `npx tsc --noEmit`, `npm run lint`, `npm run build` 통과
   - 테스트 체크리스트 (Playwright MCP, `next build && next start`, 노션 실호출)
-    - [ ] 정상: `Theme=bible` 예문 → `document.querySelector('[data-skin]')?.dataset.skin` → `"bible"`, 해당 요소가 `PageHeader`와 타이핑 보드를 포함하고 헤더·푸터 바깥. 마지막 줄 Enter로 결과 뷰 진입 → 같은 값 유지
-    - [ ] 정상: `Theme=hanji`(`"hanji"`)·`default`·빈 값·임의 문자열(각 `[data-skin]` 0개) 예문 → 타이핑·결과 화면 기대값 일치, `/` 목록 0개
-    - [ ] 오류: 없는 예문(`/passages/not-exist-id`), 본문 없음 예문, 틀린 토큰 서버(환경 변수만 덮어쓰기, `.env` 불수정) → 오류 화면에 `[data-skin]` 0개
-    - [ ] 오류: 사용자가 `bible` 예문의 `Theme`을 빈 값·임의 문자열로 바꿈 → `[data-skin]` 0개, 화면 정상. 원복 후 다시 `bible`
-    - [ ] 엣지: 서버 HTML(`curl` 또는 `browser_network_request`의 문서 응답)에 `data-skin="bible"` 포함, `first-paint` 시점에 속성 존재(Task 017 테마 깜빡임 측정 방식)
-    - [ ] 엣지: bible 예문 → [다음 예문] → `Theme` 다른 예문 → 스킨이 새 예문 값으로 바뀜, 뒤로 가기 후 다시 `bible`(`getClientRects().length > 0`인 `[data-skin]`만 집계)
-    - [ ] 엣지: `browser_emulate_media` 다크 + bible → `html.dark`와 `data-skin="bible"` 공존, 다크 bible 토큰 값 적용(Task 026 측정표와 일치), 테마 토글로 라이트↔다크 전환 시 스킨 유지
-    - [ ] 엣지: `browser_network_requests` → 폰트 파일 수·전송 크기 기록, `preload` 링크 0개, 스킨 폰트 요청은 bible 예문에서만 발생하고 `/`·오류 화면·기본 예문에서 0건
-    - [ ] 오류: 폰트 로드 실패(`browser_run_code_unsafe`로 폰트 요청 차단) → `fallback` 폰트로 표시, 글자 누락·레이아웃 깨짐 없음, 콘솔 오류는 차단된 리소스 외 0건
-    - [ ] 엣지: `browser_resize` 375px → bible 타이핑·결과 화면 `scrollWidth ≤ innerWidth`, 오버플로 요소 0(장식 SVG 포함)
-    - [ ] 엣지: `browser_emulate_media` `reducedMotion: reduce` → 스킨 애니메이션·전환 0건(`getAnimations()` 길이 0 또는 `animation-name: none`)
-    - [ ] 엣지: 헤더·푸터의 글자색·배경색·폰트가 bible 예문과 기본 예문에서 라이트·다크 모두 동일(`getComputedStyle` 비교)
-    - [ ] 정상: `browser_take_screenshot` → 라이트/다크 × 타이핑/결과 4장, 장식이 모서리·구분선에만 있고 글자와 겹치지 않음
-    - [ ] 회귀(S2·S3): bible·hanji·default 각각에서 합성 composition 시나리오와 Enter 줄 전환 정상, 1600타 주입 시 입력 이벤트 100ms 이내·Long Task 0건
+    - [x] 정상: `Theme=bible` 예문 → `document.querySelector('[data-skin]')?.dataset.skin` → `"bible"`, 해당 요소가 `PageHeader`와 타이핑 보드를 포함하고 헤더·푸터 바깥. 마지막 줄 Enter로 결과 뷰 진입 → 같은 값 유지
+    - [x] 정상: `Theme=hanji`(`"hanji"`)·`default`·빈 값·임의 문자열(각 `[data-skin]` 0개) 예문 → 타이핑·결과 화면 기대값 일치, `/` 목록 0개
+    - [x] 오류: 없는 예문(`/passages/not-exist-id`), 본문 없음 예문, 틀린 토큰 서버(환경 변수만 덮어쓰기, `.env` 불수정) → 오류 화면에 `[data-skin]` 0개
+    - [x] 오류: 사용자가 `bible` 예문의 `Theme`을 빈 값·임의 문자열로 바꿈 → `[data-skin]` 0개, 화면 정상. 원복 후 다시 `bible`
+    - [x] 엣지: 서버 HTML(`curl` 또는 `browser_network_request`의 문서 응답)에 `data-skin="bible"` 포함, `first-paint` 시점에 속성 존재(Task 017 테마 깜빡임 측정 방식)
+    - [x] 엣지: bible 예문 → [다음 예문] → `Theme` 다른 예문 → 스킨이 새 예문 값으로 바뀜, 뒤로 가기 후 다시 `bible`(`getClientRects().length > 0`인 `[data-skin]`만 집계)
+    - [x] 엣지: `browser_emulate_media` 다크 + bible → `html.dark`와 `data-skin="bible"` 공존, 다크 bible 토큰 값 적용(Task 026 측정표와 일치), 테마 토글로 라이트↔다크 전환 시 스킨 유지
+    - [x] 엣지: `browser_network_requests` → 폰트 파일 수·전송 크기 기록, `preload` 링크 0개, 스킨 폰트 요청은 bible 예문에서만 발생하고 `/`·오류 화면·기본 예문에서 0건
+    - [x] 오류: 폰트 로드 실패(`browser_run_code_unsafe`로 폰트 요청 차단) → `fallback` 폰트로 표시, 글자 누락·레이아웃 깨짐 없음, 콘솔 오류는 차단된 리소스 외 0건
+    - [x] 엣지: `browser_resize` 375px → bible 타이핑·결과 화면 `scrollWidth ≤ innerWidth`, 오버플로 요소 0(장식 SVG 포함)
+    - [x] 엣지: `browser_emulate_media` `reducedMotion: reduce` → 스킨 애니메이션·전환 0건(`getAnimations()` 길이 0 또는 `animation-name: none`)
+    - [x] 엣지: 헤더·푸터의 글자색·배경색·폰트가 bible 예문과 기본 예문에서 라이트·다크 모두 동일(`getComputedStyle` 비교)
+    - [x] 정상: `browser_take_screenshot` → 라이트/다크 × 타이핑/결과 4장, 장식이 모서리·구분선에만 있고 글자와 겹치지 않음
+    - [x] 회귀(S2·S3): bible·hanji·default 각각에서 합성 composition 시나리오와 Enter 줄 전환 정상, 1600타 주입 시 입력 이벤트 100ms 이내·Long Task 0건
     - [ ] 수동(사용자): 한글 IME 실입력(겹받침 `닭`·이중모음 `왜`·빠른 연타), bible 스킨 라이트·다크 각 1회 — 사용자 수동 확인 전까지 미완료
-    - [ ] 공통: 콘솔 오류 0건, 노션 토큰 비노출
-  - 구현 상태: 미착수(2026-10-07 추가). 한글 IME 수동 확인은 사용자 몫이라 미완료 항목으로 기록한다
-  - 테스트 결과: (미수행)
+    - [x] 공통: 콘솔 오류 0건, 노션 토큰 비노출
+  - 구현 상태: 자동 검증 완료, **사용자 대기 중이라 Task 완료 처리하지 않음**(2026-10-07, 코드 변경 0건·검증 중심). 남은 항목은 한글 IME 실입력 수동 확인(겹받침 `닭`·이중모음 `왜`·빠른 연타, bible 스킨 라이트·다크 각 1회) 하나이며 사용자가 확인한 뒤 체크하고 완료로 바꾼다. 결함은 발견되지 않아 Task 026 영향 파일도 수정하지 않았다
+  - 테스트 결과: (2026-10-07, `next build` + `next start`(027-2는 값마다 새 프로세스 3101~3104, 027-4·5는 3200), 노션 실호출, Playwright MCP, 코드·`.env` 변경 0건, `git status` 깨끗) **준비(027-1)**: 노션 `Theme` select 옵션 `hanji`/`default`/`bible`, 창세기 1장=`bible`, 애국가 1~4절=`hanji`(읽기 전용 조회). `tsc`·`lint`·`build` 통과. **S8(027-2)**: `bible`=`bible` 1개, `hanji`=`hanji` 1개, `default`·빈 값·임의 문자열 0개(타이핑·결과 모두, `getClientRects` 기준), `/` 목록 0개. `bible`은 `PageHeader`와 보드(결과 화면은 "연습 결과" 포함)를 감싸고 헤더·푸터 바깥. 서버 HTML에 `data-skin="bible"` 포함(bible 외 값에서는 0개, `Cache-Control: no-store`). 관찰: 예문 페이지는 PPR이라 `data-skin`이 스트리밍 Suspense 구간에 있어 셸에는 스켈레톤이 먼저 나오고 같은 응답 안의 `$RC`로 교체된다(하이드레이션 후 부착이 아님). **오류·전환(027-3)**: 없는 예문·본문 없음 예문('본문 없음 예문' 행)·`NOTION_TOKEN`만 덮어쓴 별도 프로세스에서 서버 HTML과 화면 모두 0개(HTTP 200 스트리밍). 애국가 4절 완주 → [다음 예문] → 창세기 1장에서 `hanji`→`bible`, 뒤로·앞으로 가기 정상(bible은 목록 마지막이라 [다음 예문] 버튼이 없음). 다크 + bible에서 `html.dark`와 `data-skin` 공존, 라이트·다크 토큰 11종이 `globals.css` 기대값과 canvas sRGB 픽셀 비교로 불일치 0건, 테마 토글(라이트/다크/시스템) 중 스킨 유지. **폰트(027-4, 프로덕션, 캐시 없는 새 컨텍스트)**: bible 예문은 Noto Serif KR woff2 14개·약 538KB(550,772B, 전부 same-origin 200)에 Pretendard 서브셋 4개가 별도, 폰트 `preload` 링크 0개. `/`·없는 예문 오류 화면·본문 없음 예문은 Noto 0건(Pretendard만), 애국가 1절(hanji)은 Gowun Batang 14개·약 224KB(229,248B)이고 Noto 0건. 폰트 요청 차단(`/_next/static/media/*.woff2` 14건 abort): Noto 로드 0, 본문 `font-family`가 `Batang, AppleMyungjo, serif` fallback으로 표시되고 글자·레이아웃 정상, 콘솔 오류는 차단된 14건(`ERR_FAILED`)뿐. **375px**(bible·hanji·기본 대용, 라이트·다크): `scrollWidth` 타이핑 360·결과 375로 `innerWidth` 375 이하, 장식 SVG를 포함해 실제 오버플로 0. 타이핑 화면에서 `getBoundingClientRect` 기준 1개로 잡히는 요소는 shadcn Progress 지표(`div.size-full bg-primary`, 0%에서 `translateX(-100%)`로 `overflow-hidden` 트랙 안에 숨음)이며 hanji·기본도 동일한 거짓 양성이다. **reduced-motion**: `reducedMotion: reduce`에서 bible 타이핑(오타 입력 후 포함)·결과 `document.getAnimations()` 0건(라이트·다크), hanji도 0건. **헤더·푸터**: 글자색·배경색·`font-family`·크기·굵기·테두리 색이 bible·hanji·기본 대용에서 라이트·다크, 타이핑·결과 모두 동일. **스크린샷**: 라이트/다크 × 타이핑(줄 불일치 포함)/결과 4장과 375px 결과 1장을 눈으로 확인 — 장식은 모서리 4곳과 하단 십자가 구분선에만 있고 글자·입력창·버튼과 겹치지 않으며, 다크 타이핑·라이트 결과 화면도 확인했다. **회귀(027-5, 합성 이벤트, 실제 IME 대체 아님)**: bible·hanji·기본 대용 모두 조합 중 `composing` 1·`incorrect` 0, 확정 후 `correct` 1·`incorrect` 0·`composing` 0, 마지막 글자 조합 중 Enter(`keyCode 229`)는 줄 유지(1→1)·입력값 보존 후 `compositionend`에서 전환 정확히 1회(1→2), Esc는 입력값을 비우고 줄 1로 전체 초기화(`incorrect`→0). 1600타 주입: bible 1600타(31줄 완주)·hanji 1612타(25회 완주 재시작)·기본 대용 1600타 모두 결과 뷰 도달(S5·S7). 입력 이벤트 동기 처리 평균 0.11/0.17/0.11ms·p95 0.2/0.5/0.2ms·최대 1.4/1.1/1.0ms, 프레임 지연 최대 15.1/15.9/16.1ms, 100ms 초과 0건, Long Task 0건, 콘솔 오류·경고 0건. **발견(결함 아님)**: 조합 전환 직후 비조합 Enter가 전환되지 않은 것은 `pending-enter.ts`의 `suppressEnter` 설계(Chrome(mac)이 `compositionend` 뒤 보내는 두 번째 Enter keydown을 한 번 무시하고 `keyup`에서 해제)이며 합성 시퀀스에 `keyup`이 없던 탓이다. 실제 순서(keydown 229 → `compositionend` → 두 번째 Enter keydown → `keyup` → 다음 줄 Enter)로 재검증해 3종 모두 전환 1회·두 번째 Enter 무시(2→2)·다음 Enter 정상(2→3). **토큰 비노출**: `.env`의 `NOTION_TOKEN` 값(값은 출력하지 않음)이 `.next/static`·`.next/server/app`·`/`·bible 예문·없는 예문의 HTML 응답에서 0건이고 `ntn_`/`secret_` 패턴도 0건. 콘솔: 027-4·5 측정 컨텍스트는 오류·경고 0건, `/` 탐색 시 CSS preload 미사용 경고 2건은 Task 024에 기록한 것과 같은 종류다. **정정 기록**: 027-4 초기에 기본 예문으로 쓴 링크(`3f2b…`)가 실제로는 '본문 없음 예문' 행이라 그 측정은 폐기하고 아래 대용으로 다시 했다. **미확인·사용자 대기**: ① 실제 한글 IME 수동 확인(겹받침 `닭`·이중모음 `왜`·빠른 연타, bible 스킨 라이트·다크 각 1회, S2) ② 실기기 S3(Performance)와 실기기 스크롤·페인트 비용(헤드리스는 프레임이 vsync에 고정되어 민감도가 낮음) ③ `compositionend` 뒤에 `keyCode 229` Enter를 보내는 브라우저(Safari로 알려진 순서)는 이 코드가 조합 중 Enter로 보류하므로 미검증 ④ 현재 노션에 `Theme=default`인 예문이 없어(창세기=`bible`, 애국가=`hanji`, 나머지는 본문 없음 행) 기본 예문 비교는 애국가 1절(`hanji`)과, 같은 DOM에서 `data-skin`을 측정용으로 제거한 상태로 대체했다 — 이 대용 상태의 `getAnimations` 34건은 로드 후 토큰이 바뀌며 생긴 색 전환이라 측정 부산물이며 실제 default 화면의 값이 아니다. 실제 default 예문 확인은 사용자가 노션에서 한 예문의 `Theme`을 `default`로 바꿔야 가능하다 ⑤ 임의 문자열 `Theme`의 구체 값은 기록하지 않았다 ⑥ 결과 뷰에서 스킨 영역이 콘텐츠 높이에서 끝나고 그 아래는 평평한 배경인 Task 024의 알려진 한계가 bible에서도 동일하게 나타난다(후속 Task 후보). **정리 필요**: 테스트용 노션 행 `테스트-본문없음`('본문 없음 예문')은 사용자가 삭제하거나 `Enabled`를 해제해야 한다. PRD는 수정하지 않았다
