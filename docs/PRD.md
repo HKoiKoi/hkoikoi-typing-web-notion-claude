@@ -18,7 +18,7 @@
 | S5 | 예문 선택 → 전체 줄 완료 → 결과 → 다음 예문까지 막힘 없이 이어진다 | 창세기 1장(31줄) 완주 E2E 1회 통과 |
 | S6 | 노션 오류·빈 DB 상황에서 빈 화면 대신 안내 화면이 나온다 | 토큰 오류/빈 DB/네트워크 오류 각각 재현 |
 | S7 | 줄 전환과 자동 스크롤이 동작한다 | 31줄 예문에서 현재 줄이 항상 화면 안에 보이고, 마지막 줄 Enter 시 결과 화면 진입 |
-| S8 | `Theme=hanji` 예문은 타이핑·결과 화면에 `data-skin="hanji"`가 적용되고, 그 외 값·모르는 값·빈 값은 기본 테마다. 라이트/다크 모두에서 판정 색(맞음/틀림/현재/미입력) 대비가 4.5:1 이상이다 | 노션에서 `Theme`을 `hanji`/`default`/빈 값/임의 문자열로 바꿔 각각 타이핑·결과 화면 루트의 `data-skin` 속성을 개발자 도구로 확인(예문 목록·헤더에는 없어야 함). 라이트·다크 각각(한국 스킨 + 다크 조합 포함)에서 판정 글자색과 배경색의 대비를 개발자 도구 대비 검사기로 측정 |
+| S8 | `Theme`이 `hanji` 또는 `bible`인 예문은 타이핑·결과 화면에 같은 값의 `data-skin`(`data-skin="hanji"`/`data-skin="bible"`)이 적용되고, 그 외 값·모르는 값·빈 값은 기본 테마다. 라이트/다크 모두에서 판정 색(맞음/틀림/현재/미입력) 대비가 4.5:1 이상이다 | 노션에서 `Theme`을 `bible`/`hanji`/`default`/빈 값/임의 문자열로 바꿔 각각 타이핑·결과 화면 루트의 `data-skin` 속성을 개발자 도구로 확인(예문 목록·헤더에는 없어야 함). 라이트·다크 각각(한지·성경책 스킨 + 다크 조합 포함)에서 판정 글자색과 배경색의 대비를 개발자 도구 대비 검사기로 측정 |
 
 ## 2. 사용자 여정
 
@@ -60,8 +60,8 @@
 | F013 | Enter 줄 전환 | MVP | 현재 줄이 전부 일치하면 Enter 한 번으로 다음 줄 이동(조합 중 Enter는 보류했다가 조합 확정 후 판정, 7.3). 불일치면 이동하지 않고 오류 표시. 마지막 줄 Enter는 종료 | 타이핑 화면 |
 | F014 | 자동 스크롤·진행도 | MVP | 줄 전환 시 현재 줄이 화면 안에 오도록 부드럽게 스크롤. 진행도 "n / 총 줄 수"와 진행 막대, 경과 시간, 실시간 타수·정확도 표시 | 타이핑 화면 |
 | F015 | 예문 본문 매핑 | MVP | Lines DB 행을 `Line Number` 순 줄 목록으로 변환(6장). `Label` 속성은 라벨로 분리(7.2) | 타이핑 화면 |
-| F016 | 예문별 테마 스킨 | MVP 이후 | 노션 Passages DB의 `Theme`(select, `default`/`hanji`)가 `hanji`인 예문은 타이핑·결과 화면에 `data-skin="hanji"`를 적용해 오방색/단청 기반 색, 직접 그린 SVG 문양, 한글 명조 폰트로 표시한다. `default`·모르는 값·빈 값은 기본 테마이며 행을 제외하지 않는다. 다크모드와 독립이라 한국 스킨 + 다크 조합이 가능하다. 헤더·예문 목록은 기본 테마 유지. 판정 색 대비 4.5:1 이상(S8). category/tag로 스킨을 추론하지 않는다 | 타이핑 화면, 결과 화면 |
-| F017 | 테마 효과 끄기 | MVP 이후(선택) | 타이핑 화면의 토글 하나로 F016 스킨을 끄고 기본 테마로 표시한다(문양·폰트 포함). 선택은 localStorage에 저장하고 저장 실패 시 무시한다. 설정 화면이 아니라 토글 컨트롤 하나이며, 다른 설정 항목은 두지 않는다 | 타이핑 화면 |
+| F016 | 예문별 테마 스킨 | MVP 이후 | 노션 Passages DB의 `Theme`(select, `default`/`hanji`/`bible`)가 `hanji`인 예문은 타이핑·결과 화면에 `data-skin="hanji"`를 적용해 오방색/단청 기반 색, 직접 그린 SVG 문양, 한글 명조 폰트로 표시한다. `bible`인 예문은 `data-skin="bible"`을 적용해 양피지(parchment) 질감 배경, 짙은 가죽 갈색 포인트와 금박 색 accent, 직접 그린 SVG 금박 모서리 장식·십자가 구분선, Noto Serif KR 폰트로 표시하며 다크모드에서는 촛불 아래 어두운 가죽 톤(짙은 갈색 배경 + 따뜻한 크림색 글자 + 금색 accent)이 된다. `default`·모르는 값·빈 값은 기본 테마이며 행을 제외하지 않는다. 다크모드와 독립이라 한지/성경책 스킨 + 다크 조합이 가능하다. 헤더·예문 목록은 기본 테마 유지. 판정 색 대비 4.5:1 이상(S8). category/tag로 스킨을 추론하지 않는다 | 타이핑 화면, 결과 화면 |
+| F017 | 테마 효과 끄기 | MVP 이후(선택) | 타이핑 화면의 토글 하나로 F016 스킨(`hanji`·`bible` 공통)을 끄고 기본 테마로 표시한다(문양·폰트 포함). 선택은 localStorage에 저장하고 저장 실패 시 무시한다. 설정 화면이 아니라 토글 컨트롤 하나이며, 다른 설정 항목은 두지 않는다 | 타이핑 화면 |
 
 ### MVP 제외
 로그인/계정, 서버 DB, 랭킹/리더보드, 노션 쓰기(결과 저장 등), 예문 앱 내 편집, 다중 사용자, 통계 대시보드, 설정 화면(F017의 토글 하나는 설정 화면이 아니므로 예외), 알림, 소리 효과, 이전 줄로 돌아가기, 중간 이탈 후 이어치기, 자동 줄 분할(글자 수 기준), 노션 페이지 본문(블록)·서식 읽기.
@@ -84,7 +84,7 @@
 | 역할 | 예문 탐색과 선택 |
 | 진입 | 헤더 메뉴/로고, 결과 화면 [목록으로], 오류 화면 복구 |
 | 사용자 행동 | 필터 선택, 카드 클릭 |
-| 주요 기능 | 서버 컴포넌트에서 예문 프로퍼티 조회 · 분류/언어/난이도/태그 필터 · 건수 표시 · 로딩 스켈레톤 · 같은 `Category` 안에서는 `Order` → `Title` 순 정렬 · (선택) 카드별 최고 기록 · 기본 테마 유지(스킨은 적용하지 않음. 선택: `skin`이 `hanji`인 카드에 스킨 배지 표시) |
+| 주요 기능 | 서버 컴포넌트에서 예문 프로퍼티 조회 · 분류/언어/난이도/태그 필터 · 건수 표시 · 로딩 스켈레톤 · 같은 `Category` 안에서는 `Order` → `Title` 순 정렬 · (선택) 카드별 최고 기록 · 기본 테마 유지(스킨은 적용하지 않음. 선택: `skin`이 `default`가 아닌(`hanji`/`bible`) 카드에 스킨 배지 표시) |
 | 다음 이동 | 카드 클릭 → 타이핑 화면, 조회 실패 → 오류/빈 상태 |
 
 ### 타이핑 화면
@@ -100,7 +100,7 @@
 | 사용자 행동 | 입력, Enter로 줄 전환, 백스페이스 수정, [처음부터] 버튼, [목록으로], (선택) [테마 효과 끄기] 토글 |
 | 본문 영역 | 전체 줄을 세로로 나열. 완료한 줄은 흐리게(입력 결과 유지), 현재 줄은 강조 + 입력 줄 표시, 남은 줄은 기본 색. 줄 라벨(예: `1절`)은 줄 앞에 작은 배지로만 표시 |
 | 보조 영역 | 경과 시간(타이머), 진행도 "n / 총 줄 수"와 진행 막대, 실시간 타수(타/분)·정확도(%) |
-| 주요 기능 | 글자별 span 렌더링 · 숨은 input으로 입력 수신(현재 줄 1개) · 줄 전환 시 입력 초기화와 자동 스크롤 · 마지막 줄 완료 감지 · Esc 또는 [처음부터]로 전체 초기화 · 화면 클릭 시 입력창 재포커스 · 예문의 `skin`이 `hanji`면 화면 루트에 `data-skin="hanji"` 적용(F016) · (선택) [테마 효과 끄기] 토글로 스킨 해제, 선택은 localStorage 저장(F017) |
+| 주요 기능 | 글자별 span 렌더링 · 숨은 input으로 입력 수신(현재 줄 1개) · 줄 전환 시 입력 초기화와 자동 스크롤 · 마지막 줄 완료 감지 · Esc 또는 [처음부터]로 전체 초기화 · 화면 클릭 시 입력창 재포커스 · 예문의 `skin`이 `hanji` 또는 `bible`이면 화면 루트에 같은 값의 `data-skin` 적용(F016) · (선택) [테마 효과 끄기] 토글로 스킨 해제, 선택은 localStorage 저장(F017) |
 | 다음 이동 | 종료 → 결과 뷰, 존재하지 않는 예문/본문 없음 → 오류/빈 상태 |
 
 ### 결과 화면
@@ -142,7 +142,7 @@
 | Difficulty | select (`Easy` / `Medium` / `Hard`) | X | difficulty | 없으면 미지정 |
 | Tags | multi_select | X | tags | 없으면 빈 배열 |
 | Enabled | checkbox | X | enabled | `enabled === false`인 행은 클라이언트 매핑에서 제외(서버 필터 사용 안 함). 프로퍼티 없으면 전부 사용 |
-| Theme | select (`default` / `hanji`) | X | skin | 예문별 스킨(F016). 없으면 `default`. 모르는 값·빈 값도 `default`로 처리하며 행을 제외하지 않음 |
+| Theme | select (`default` / `hanji` / `bible`) | X | skin | 예문별 스킨(F016). 없으면 `default`. 모르는 값·빈 값도 `default`로 처리하며 행을 제외하지 않음 |
 
 **Lines DB**
 
@@ -174,7 +174,7 @@
 
 앱 내부 타입(개념):
 ```
-PassageSummary { id(노션 page id), title, language: 'ko'|'en', category, order?, difficulty?: 'Easy'|'Medium'|'Hard', tags[], skin: 'default'|'hanji' }   // 목록용(Passages 프로퍼티만). skin은 Theme 속성(F016)
+PassageSummary { id(노션 page id), title, language: 'ko'|'en', category, order?, difficulty?: 'Easy'|'Medium'|'Hard', tags[], skin: 'default'|'hanji'|'bible' }   // 목록용(Passages 프로퍼티만). skin은 Theme 속성(F016)
 Passage = PassageSummary & { lines: Line[] }                                                          // 타이핑용(Lines DB 행 포함)
 Line { text, label? }                                                                                 // label: Label 속성, 판정 제외
 TypingResult { passageId, accuracy, elapsedMs, cpm, wpm, mistakes, lineCount }                       // F011에서만 localStorage 저장
@@ -271,6 +271,12 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
   - 한글 명조 폰트(`next/font/google`)는 타이핑 화면에서만 로드하고 굵기는 1~2개로 제한한다. 입력 줄과 예문 줄은 같은 폰트를 쓴다.
   - 스킨의 애니메이션·효과는 `prefers-reduced-motion`을 따른다.
   - 테마 효과 끄기(F017) 선택 시 `data-skin`을 적용하지 않는다(localStorage 읽기·쓰기 실패는 무시하고 스킨 켜짐 상태 유지).
+  - **`bible` 스킨(성경책, F016)**: 위 `hanji` 규칙과 같은 구조로 `[data-skin="bible"]`(라이트)와 `.dark [data-skin="bible"]`(다크)로 CSS 변수를 재정의한다. `hanji` 스킨 규칙은 그대로 유지하며 `bible`은 별도 하위 규칙이다.
+    - 색: 라이트는 양피지(parchment) 질감 배경 + 짙은 가죽 갈색 포인트 + 금박 색 accent. 다크는 촛불 아래 어두운 가죽 톤(짙은 갈색 배경 + 따뜻한 크림색 글자 + 금색 accent). 스킨과 next-themes 모드는 별개 축이라 "bible + 다크" 조합이 가능하다.
+    - 대비: 라이트·다크 모두 판정 색(`--typing-*` 7종)과 본문·muted·버튼 텍스트 대비 4.5:1 이상(S8). 공백 오타 배경 위 incorrect 글자가 최솟값이 되기 쉬우므로 특히 확인한다.
+    - 문양: 직접 그린 SVG 금박 모서리 장식과 십자가 구분선만 쓰고 외부 에셋은 쓰지 않는다. 장식 영역(모서리, 구분선)에만 두고 글자 뒤 배경에는 깔지 않는다.
+    - 폰트: Noto Serif KR(OFL, `next/font/google`)을 타이핑 화면에서만 로드하고 굵기는 400/700 두 가지, `preload: false`로 제한한다. 입력 줄과 예문 줄은 같은 폰트를 쓴다(`font-mono` 대체).
+    - 노션 `Theme`의 `bible` 값은 대소문자까지 일치해야 한다(사용자가 select 옵션을 직접 추가).
 - **언어**: UI 문구 전부 한국어.
 
 ## 9. 기술 스택, 리스크
@@ -281,6 +287,7 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 - next-themes ^0.4.6, usehooks-ts ^3.1.1
 - 추가: `@notionhq/client` 5.27.0(정확 고정), `server-only` 0.0.1. 노션 공식 SDK라 data source 쿼리와 페이지네이션 헬퍼 제공
 - 추가(F016): `next/font/google`(Next.js 내장, 별도 패키지 없음)로 OFL 라이선스 한글 명조(Gowun Batang 또는 Hahmlet) 로드. 문양은 직접 제작한 SVG라 외부 에셋 없음
+- 추가(F016, `bible` 스킨): 같은 `next/font/google`로 OFL 라이선스 Noto Serif KR(400/700, `preload: false`) 로드. 별도 패키지 없음, 문양은 직접 그린 SVG
 - 폼 검증 라이브러리, DB, 인증 라이브러리는 사용하지 않음
 - 새 UI는 `npx shadcn@latest add`로 추가(필요 후보: Card, Badge, Select/ToggleGroup, Button, Skeleton, Progress, ScrollArea). 컴포넌트 계층 규칙(ui → common → layout → app)과 `/components` 쇼케이스 반영 규칙 준수
 
@@ -296,9 +303,9 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 | 예문 수가 많아 목록이 무거움 | 가정은 수백 건 이하, 초과 시 MVP 이후 페이지네이션 |
 | 한글 지표 정의의 모호성(음절 vs 자모 타수) | 음절 기준으로 확정, 미결 사항에 기록 |
 | 긴 본문(30줄 이상)에서 자동 스크롤과 가상 키보드 충돌 | 현재 줄 기준 스크롤, 모바일은 수동 테스트 |
-| 한글 웹폰트의 용량과 `next/font/google` preload 동작 미확인 | 구현 Task에서 네트워크 요청으로 폰트 파일 수·크기·preload 여부를 확인하고, 타이핑 화면에서만 로드·굵기 1~2개로 제한(8장) |
-| 문양 라이선스 | 문양·색을 직접 제작(직접 그린 SVG, 오방색 기반 CSS 변수)해 회피. 폰트만 OFL 한글 명조 사용 |
-| 스킨 폰트 적용 시 IME 조합, `font-mono` 대체에 따른 입력 줄과 예문 줄 정렬 회귀 | 입력 줄과 예문 줄에 같은 폰트 적용(8장). 스킨 on/off 각각에서 S2 시나리오와 줄 정렬을 수동 재확인 |
+| 한글 웹폰트의 용량과 `next/font/google` preload 동작 미확인(`hanji`의 한글 명조와 `bible`의 Noto Serif KR 모두 해당) | 구현 Task에서 네트워크 요청으로 폰트 파일 수·크기·preload 여부를 확인하고, 타이핑 화면에서만 로드·굵기 1~2개로 제한(8장). `bible`은 목록 청크에 폰트가 포함되지 않는지(0건)도 확인 |
+| 문양 라이선스 | 문양·색을 직접 제작(직접 그린 SVG, 오방색 기반 CSS 변수)해 회피. `bible`의 금박 모서리·십자가 구분선과 양피지·가죽·금박 색도 직접 제작. 폰트만 OFL 한글 명조(`hanji`)와 Noto Serif KR(`bible`) 사용 |
+| 스킨(`hanji`·`bible`) 폰트 적용 시 IME 조합, `font-mono` 대체에 따른 입력 줄과 예문 줄 정렬 회귀 | 입력 줄과 예문 줄에 같은 폰트 적용(8장). 스킨 on/off 각각(`bible` 포함)에서 S2 시나리오와 줄 정렬을 수동 재확인 |
 
 ## 10. 미결 사항
 
@@ -320,3 +327,4 @@ PassageResult<T> = { ok: true, data: T } | { ok: false, kind: 'config' | 'transi
 16. 예문별 스킨 결정 방식. **(결정: 노션 Passages DB의 `Theme` 속성(select, `default`/`hanji`)으로 결정하고 category/tag 추론은 쓰지 않음, 2026-10-06)**
 17. 스킨을 next-themes 모드에 추가할지 별도 축으로 둘지. **(결정: 모드에 추가하지 않고 별도 `data-skin` 축으로 분리. 이유: 한국 스킨 + 다크 조합이 가능하고 예문별 자동 적용이 되기 때문, 2026-10-06)**
 18. 스킨 폰트 최종 선택(Gowun Batang vs Hahmlet)과 한글 서브셋 preload 동작 확인. **(구현 Task에서 결정)**
+19. bible 스킨 폰트·디자인 결정. **(결정: 폰트는 Noto Serif KR 채택(OFL, `next/font/google`, 400/700, `preload: false`), 디자인은 양피지(parchment) 질감 + 직접 그린 SVG 금박 모서리/십자가 구분선, 다크는 촛불 아래 어두운 가죽 톤, 2026-10-07. 구현 Task 026에서 최종 확정)**
